@@ -16,34 +16,40 @@ int main(int argc, char const *argv[]) {
 	outputFile.append(".pre");
 	writeFile = fopen(outputFile.c_str(), "w");
 
-	int countSpace = 0;
 	char input;
 
 	while((input = getc(readFile)) != EOF) {
 
 		if(input == '\t' || input == ' ') {
-			if(countSpace != 0 || ftell(readFile) == 1) {
+			if(ftell(readFile) == 1) {
 				continue;
 			} else {
-				if(input == '\t') input = ' ';
+				while((input = getc(readFile)) != EOF) {
+					if(input != ' ' && input != '\t') break;
+				}
+				input = ' ';
 				fwrite(&input, sizeof(char), sizeof(input), writeFile);
-				countSpace++;
+				fseek(readFile, -1, SEEK_CUR);
+				continue;
 			}
 		} else if(input == '\n') {
-			countSpace = 0;
 			fwrite(&input, sizeof(char), sizeof(input), writeFile);
-
 			while((input = getc(readFile)) != EOF) {
-				if(input != ' ' && input != '\t') break;
+					if(input != ' ' && input != '\t') break;
 			}
-
-			if (input != '\n') {
-				input = toupper(input);
+			if(input != '\n') {
+				input  = toupper(input);
 				fwrite(&input, sizeof(char), sizeof(input), writeFile);
 			}
+			continue;
 		
+		} else if(input == ';') {
+			while((input = getc(readFile)) != EOF) {
+				if(input == '\n') break;
+			}
+			fwrite(&input, sizeof(char), sizeof(input), writeFile);
+			continue;
 		} else {
-			countSpace = 0;
 			input  = toupper(input);
 			fwrite(&input, sizeof(char), sizeof(input), writeFile);
 		}
