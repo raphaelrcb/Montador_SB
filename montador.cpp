@@ -444,7 +444,7 @@ int main(int argc, char const *argv[]) {
                
                 cout << "> inputStr = " << inputStr << endl;
                 int iter = 0;
-                char *p = strtok(strdupa(inputStr.c_str()), " ");
+                char *p = strtok(strdupa(inputStr.c_str()), " ,");
 
                 while(p != NULL) {
 
@@ -470,7 +470,7 @@ int main(int argc, char const *argv[]) {
                     }
                     
                     iter++;
-                    p = strtok(NULL, " ");
+                    p = strtok(NULL, " ,");
 
                 }
 
