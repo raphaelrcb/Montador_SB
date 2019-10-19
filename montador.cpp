@@ -265,7 +265,7 @@ string PreProcess(string arq) {
             if (iter == 0) {
                 label = p_String;
                 if(p_String == "STOP") to_Archive = p_String + '\n';
-                else to_Archive = p_String + ' ';
+                else if(label.find(':') == string::npos && p_String != "IF") to_Archive = p_String + ' ';
             }
             else if (iter == 1) {
                 if(label.find(':') != string::npos) {
