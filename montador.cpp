@@ -398,10 +398,12 @@ bool verify_token(std::string token)
 int verify_line(std::string line, int linha) 
 {
     std::vector < std::string> token;
-    char line_char[line.size()];
-
-    strcpy(line_char, line.c_str());
-    char * tok = strtok(line_char, " ," );
+    // char line_char[line.size()];
+    // string line_str;
+    // line_str = line;
+    // strcpy(line_char, line.c_str());
+    
+    char * tok = strtok(strdupa(line.c_str()), " ," );
 
     while (tok != NULL) //separa a string em tokens
     {
