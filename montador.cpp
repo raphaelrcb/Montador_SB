@@ -600,6 +600,7 @@ int main(int argc, char const *argv[]) {
     }
 
     i = 0;
+    fprintf(writeFile, "%c", ' ');
     while(i < toArchiveData.size()) {
         int num = toArchiveData.at(i);
         cout << ' ' << num;
