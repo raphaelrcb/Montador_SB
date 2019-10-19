@@ -243,6 +243,7 @@ string PreProcess(string arq) {
     char inputChar;
     int val;
     string to_Archive, inputStr, label, dir, outputFile = arq;
+    outputFile.erase (outputFile.end()-4, outputFile.end());
     outputFile.append(".pre");
     writeFile = fopen(outputFile.c_str(), "w");
 
@@ -411,7 +412,7 @@ int verify_line(std::string line, int linha)
 
     for (size_t i = 0; i < token.size(); i++)
     {            
-        if(verify_token(token[i]))
+        if(verify_token(token[i]))//para cada token verifica se tem erro léxico
             std::cout << "ERRO LEXICO NA LINHA:" << linha << std::endl;
     }
     return linha;
@@ -439,6 +440,7 @@ int main(int argc, char const *argv[]) {
 
     FILE* readFile = fopen(arq_PreProcess.c_str(), "r");
     string outputFile = argv[1];
+    outputFile.erase (outputFile.end()-4, outputFile.end());
     outputFile.append(".obj");
     FILE* writeFile = fopen(outputFile.c_str(), "w");
 
