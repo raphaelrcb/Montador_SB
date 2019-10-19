@@ -98,7 +98,7 @@ public:
     }
     ~TabelaSim(){}
     
-    void addSimbData(string simb, int end) {
+    void addSimbSemPend(string simb, int end) {
         TabSim_Node* new_Simb = new TabSim_Node();
         new_Simb->simb = simb;
         new_Simb->def = true;
@@ -111,7 +111,7 @@ public:
         new_Simb->pendHead->next = NULL;
     }
 
-    void AddSimbText(string simb, int end) {
+    void addSimbComPend(string simb, int end) {
         TabSim_Node* new_Simb = new TabSim_Node();
         new_Simb->simb = simb;
         new_Simb->def = false;
@@ -263,10 +263,8 @@ string PreProcess(string arq) {
             string p_String = p;
 
             if (iter == 0) {
-                if(p_String.find(':') != string::npos || p_String == "IF") {
-                    label = p_String;
-                }
-                else if (p_String == "STOP") to_Archive = p_String + '\n';
+                label = p_String;
+                if(p_String == "STOP") to_Archive = p_String + '\n';
                 else to_Archive = p_String + ' ';
             }
             else if (iter == 1) {
@@ -295,7 +293,8 @@ string PreProcess(string arq) {
                 val = atoi(p_String.c_str());
                 if(dir != "EQU") {
                     to_Archive = to_Archive.substr(0,to_Archive.find('\n'));
-                    to_Archive = to_Archive + ' ' + p_String + '\n';
+                    if(label == "COPY") to_Archive = to_Archive + ',' + p_String + '\n';
+                    else to_Archive = to_Archive + ' ' + p_String + '\n';
                 }
                 if(dir == "EQU") {
                     preSimb.add(label,dir,val);
@@ -367,13 +366,14 @@ int main(int argc, char const *argv[]) {
 
     vector<int> toArchiveText, toArchiveData;
     int countEnd = 0, countLinha = 1;
+    int section = 0;
     char inputChar;
     string inputStr;
     string arq_PreProcess = PreProcess(argv[1]);
 
     Tabela tabela_Inst = CriaTabela("instrucoes");
     Tabela tabela_Dir = CriaTabela("diretivas");
-    Tabela_Node *instNode, *dirNode;
+    Tabela_Node *instNode1, *instNode2, *dirNode;
     TabelaSim tabela_Simb;
     TabSim_Node* simbNode;
 
@@ -390,147 +390,139 @@ int main(int argc, char const *argv[]) {
         while((inputChar = getc(readFile)) != EOF && inputChar != '\n') {
             inputStr+=inputChar;
         }
-
-        if(inputStr == "SECTION TEXT") { // Montagem da section text (instruções e pendências)
-            countLinha++;
-            cout << "  > Iniciando montagem SECTION TEXT" << endl;
-            while(!feof(readFile)) {
-                inputStr = "";
-                while((inputChar = getc(readFile)) != EOF && inputChar != '\n') inputStr+=inputChar; 
                
-                cout << "> inputStr = " << inputStr << endl;
-                int iter = 0;
-                char *p = strtok(strdupa(inputStr.c_str()), " ,");
-                string p_String = p;
+        cout << "> inputStr = " << inputStr << endl;
+        int iter = 0;
+        char *p = strtok(strdupa(inputStr.c_str()), " ,");
 
-                while(p != NULL) {
+        while(p != NULL) {
 
-                    if(iter == 0) {
-                        if(p_String.find(':') != string::npos) {
-                            p_String = p_String.substr(0,p_String.find(':'));
-                            simbNode = tabela_Simb.find(p_String);
-                            if(simbNode != NULL) {
-                                if(!simbNode->def) {
-                                    tabela_Simb.addPend(simbNode, countEnd - (instNode->size - iter));
-                                }
-                            }
-                            else {
-                                tabela_Simb.addSimbData(p_String, countEnd);
-                            }
-                            iter--;
+            string p_String = p;
+
+            if(iter == 0) { // Se for a primeira palavra da linha
+                if(p_String.find(':') != string::npos) {
+                    instNode1 = NULL;
+                    p_String = p_String.substr(0,p_String.find(':'));
+                    simbNode = tabela_Simb.find(p_String);
+                    if(simbNode != NULL) {
+                        if(!simbNode->def) {
+                            toArchiveText = tabela_Simb.resolvePend(simbNode, countEnd, toArchiveText);
+                        }
+                        else cout << " ERRO - Label já definida !!! ( Linha " << countLinha << " ) " << endl;
+                    }
+                    else { // se label n foi mencionada ainda
+                        tabela_Simb.addSimbSemPend(p_String, countEnd);
+                    }
+                }
+                else {
+                    if(p_String == "SECTION") {
+                        p = strtok(NULL, " ,");
+                        p_String = p;
+                        if(p_String == "TEXT") {
+                            section = 1;
+                        } else if(p_String == "DATA") {
+                            section = 2;
+                        }
+                        else cout << "< ERRO - Section inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
+                    }
+                    else {
+                        instNode1 = tabela_Inst.find(p);
+                        if(instNode1 != NULL) { // Se achou a instrução na tabela
+                            toArchiveText.push_back(instNode1->opcode);
+                            countEnd += instNode1->size;
                         }
                         else {
-                            instNode = tabela_Inst.find(p);
-                            if (instNode != NULL) { // Se achou a instrução na tabela
-                                toArchiveText.push_back(instNode->opcode);
-                                countEnd += instNode->size;
-                            }
-                            else {
-                                cout << "! Instrução não encontrada ('" << p << "'). ERRO (linha " << countLinha << ") !" << endl; 
-                                break; // Vai pra próxima linha    
-                            }
+                            cout << "! Instrução não encontrada ('" << p << "'). ERRO (linha " << countLinha << ") !" << endl; 
+                            break; // Vai pra próxima linha    
                         }
                     }
-                    else if(iter == 1) { // é algum operando (label)
-                        simbNode = tabela_Simb.find(p);
-                        if(simbNode != NULL) {
-                            if(!simbNode->def) {
-                                tabela_Simb.addPend(simbNode, countEnd - (instNode->size - iter));
-                                toArchiveText.push_back(-1);
-                            }
-                            else toArchiveText.push_back(simbNode->end);
-                        }
-                        else {
-                            tabela_Simb.AddSimbText(p, countEnd - (instNode->size - iter));
+                }
+            }
+            else if(iter == 1) { // // Se for a segunda palavra da linha
+                if(instNode1 != NULL) { // Se a instrução for a PRIMEIRA palavra
+                    simbNode = tabela_Simb.find(p_String);
+                    if (simbNode != NULL) {
+                        if(!simbNode->def) {
+                            tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
                             toArchiveText.push_back(-1);
                         }
-
-                    } else { // é segundo operando do COPY
-                        if(instNode->name != "COPY") {
-                            cout << "! ERRO SINTÁTICO (linha "<< countLinha << ") !" << endl;
-                        } else {
-                            simbNode = tabela_Simb.find(p);
-                            if(simbNode != NULL) {
-                                if(!simbNode->def) {
-                                    tabela_Simb.addPend(simbNode, countEnd - (instNode->size - iter));
-                                    toArchiveText.push_back(-1);
-                                }
-                                else toArchiveText.push_back(simbNode->end);
-                            }
-                            else {
-                                tabela_Simb.AddSimbText(p, countEnd - (instNode->size - iter));
-                                toArchiveText.push_back(-1);
-                            }
-                        }
+                        else toArchiveText.push_back(simbNode->end);
                     }
-                    
-                    iter++;
-                    p = strtok(NULL, " ,");
-
+                    else {
+                        tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                        toArchiveText.push_back(-1);
+                    }
                 }
-
-                if(inputStr == "STOP") break;
-
-                countLinha++;
+                else {
+                    dirNode = tabela_Dir.find(p);
+                    instNode2 = tabela_Inst.find(p);
+                    if(dirNode != NULL) {
+                        if(dirNode->name == "SPACE") toArchiveData.push_back(0);
+                        countEnd++;
+                    }
+                    else if(instNode2 != NULL) {
+                        toArchiveText.push_back(instNode2->opcode);
+                        countEnd += instNode2->size;
+                    }
+                    else {
+                        cout << "< ERRO - Instrução/Diretiva inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
+                        break; // vai pra próxima linha
+                    }
+                }
             }
-        }
-        else if(inputStr == "SECTION DATA") {  // // Montagem da section data (definição e resolução de pendências)
-            countLinha++;
-            cout << "  > Iniciando montagem SECTION DATA" << endl;
-            while(!feof(readFile)) {
-                inputStr = "";
-                while((inputChar = getc(readFile)) != EOF && inputChar != '\n') inputStr+=inputChar; 
-               
-                if(inputStr == "SECTION TEXT") {
-                    fseek(readFile, -13, SEEK_CUR);
-                    break;
+            else if(iter == 2) {
+                if(dirNode != NULL) {
+                    if(dirNode->name == "SPACE") {
+                        toArchiveData.push_back(0);
+                        countEnd += atoi(p) - 1;
+                    } else toArchiveData.push_back(atoi(p));
                 }
-
-                cout << "> inputStr = " << inputStr << endl;
-                int iter = 0;
-                char *p = strtok(strdupa(inputStr.c_str()), " :");
-
-                while(p != NULL) {
-
-                    if(iter == 0) {
-                        simbNode = tabela_Simb.find(p);
-                        if (simbNode != NULL) { // Se achou a instrução na tabela
-                            toArchiveText = tabela_Simb.resolvePend(simbNode, countEnd, toArchiveText);
-
+                else if(instNode2 != NULL || (instNode1 != NULL && instNode1->name == "COPY")) { // Se a instrução for a SEGUNDA palavra
+                    simbNode = tabela_Simb.find(p_String);
+                    if(simbNode != NULL) {
+                        if(!simbNode->def) {
+                            if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
+                            else tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
+                            toArchiveText.push_back(-1);
                         }
-                        else {
-                            cout << "Novo simbolo sem pendencias ('" << p << "') encontrado." << endl;
-                            tabela_Simb.addSimbData(p,countEnd);
-                            
-                        } 
+                        else toArchiveText.push_back(simbNode->end);
                     }
-                    else if(iter == 1) { // é algum operando (label)
-
-                        dirNode = tabela_Dir.find(p);
-                        if(dirNode != NULL) {
-                            if(dirNode->name == "SPACE") toArchiveData.push_back(0);
-                            countEnd++;
-                        }
-                        else cout << "! Diretiva não encontrada ('" << p << "'). ERRO !" << endl;
-
-                    } else if(iter == 2) {
-                        if(dirNode->name == "SPACE") {
-                            toArchiveData.push_back(0);
-                            countEnd += atoi(p) - 1;
-                        } else toArchiveData.push_back(atoi(p));
+                    else {
+                        if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                        else tabela_Simb.addSimbComPend(p, countEnd - 1);
+                        toArchiveText.push_back(-1);
                     }
-                    
-                    iter++;
-                    p = strtok(NULL, " ");
-
                 }
-                countLinha++;
             }
+            else if(iter == 3) { // // Se for a terceira palavra da linha
+                if(instNode2 != NULL && instNode2->name == "COPY") {
+                    simbNode = tabela_Simb.find(p_String);
+                    if (simbNode != NULL) {
+                        if(!simbNode->def) {
+                            tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
+                            toArchiveText.push_back(-1);
+                        }
+                        else toArchiveText.push_back(simbNode->end);
+                    }
+                    else {
+                        tabela_Simb.addSimbComPend(p, countEnd - (instNode2->size - iter));
+                        toArchiveText.push_back(-1);
+                    }
+                } else {
+                    cout << " < ERRO - argumento na 4 palavra sem ser copy ( linha " << countLinha << " )" << endl;
+                }
+            }
+                    
+            iter++;
+            p = strtok(NULL, " ,");
+
         }
 
-        cout << endl;
-    
+        countLinha++;
+        
     }
+
+    cout << endl;
 
     tabela_Simb.print();
     cout << "--> Montagem finalizada <--" << endl;
