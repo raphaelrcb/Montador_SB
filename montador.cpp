@@ -357,6 +357,66 @@ Tabela CriaTabela(string c) {
     return tabela;
 }
 
+bool verify_token(std::string token) 
+{
+    // std::cout << "verify" << std::endl;
+    char num = '0';
+    bool error = false;
+
+    if ((token.find("!") != std::string::npos) || (token.find("@") != std::string::npos) || 
+        (token.find("#") != std::string::npos) || (token.find("$") != std::string::npos) || 
+        (token.find("%") != std::string::npos) || (token.find("&") != std::string::npos) || 
+        (token.find("*") != std::string::npos) || (token.find("(") != std::string::npos) || 
+        (token.find(")") != std::string::npos) || (token.find("-") != std::string::npos) || 
+        (token.find("=") != std::string::npos) || (token.find("{") != std::string::npos) || 
+        (token.find("}") != std::string::npos) || (token.find("[") != std::string::npos) || 
+        (token.find("]") != std::string::npos) || (token.find("~") != std::string::npos) || 
+        (token.find("^") != std::string::npos) || (token.find(";") != std::string::npos) || 
+        (token.find(".") != std::string::npos) || (token.find("<") != std::string::npos) || 
+        (token.find(">") != std::string::npos) || (token.find("?") != std::string::npos) || 
+        (token.find("/") != std::string::npos) || (token.find("|") != std::string::npos) || 
+        (token.find("\"") != std::string::npos) || (token.find("\'") != std::string::npos) )
+    {
+        error = true;
+    }
+
+    if ( token.find_first_not_of("0123456789") != std::string::npos) //se existir um caracter diferente de número, é uma instrução/diretiva/operador/label
+    {                                                                //se for uma sequência apenas numérica é um const ou um vetor (space)
+        for (int i = 0; i < 10; i++)
+        {
+            num = i + '0';
+            if (token.find(num) == 0)//se uma instrução/diretiva/operador/label começa com número, é erro léxico
+                error = true;
+        }
+        
+    }
+    
+    return error;
+}
+
+int verify_line(std::string line, int linha) 
+{
+    std::vector < std::string> token;
+    char line_char[line.size()];
+
+    strcpy(line_char, line.c_str());
+    char * tok = strtok(line_char, " ," );
+
+    while (tok != NULL) //separa a string em tokens
+    {
+        // std::cout << tokens << '\n';
+        token.push_back(tok);
+        tok = strtok(NULL, " ,");
+    }
+
+    for (size_t i = 0; i < token.size(); i++)
+    {            
+        if(verify_token(token[i]))
+            std::cout << "ERRO LEXICO NA LINHA:" << linha << std::endl;
+    }
+    return linha;
+}
+
 int main(int argc, char const *argv[]) {
     
     if(argv[1] == NULL) {
@@ -390,7 +450,7 @@ int main(int argc, char const *argv[]) {
         while((inputChar = getc(readFile)) != EOF && inputChar != '\n') {
             inputStr+=inputChar;
         }
-               
+        verify_line(inputStr, countLinha);
         cout << "> inputStr = " << inputStr << endl;
         int iter = 0;
         char *p = strtok(strdupa(inputStr.c_str()), " ,");
