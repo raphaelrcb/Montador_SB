@@ -133,7 +133,9 @@ public:
             return toArchive;
         }
         while(pendAtual->end != -1) {
-            toArchive.at(pendAtual->end) = simbNode->end;
+            if(toArchive.at(pendAtual->end) == -1) toArchive.at(pendAtual->end) = simbNode->end;
+            else toArchive.at(pendAtual->end) += simbNode->end;
+
             pendAtual = pendAtual->next;
         }
         return toArchive;
@@ -432,10 +434,10 @@ int main(int argc, char const *argv[]) {
     }
 
     vector<int> toArchiveText, toArchiveData;
-    int countEnd = 0, countLinha = 1;
-    int section = 0;
+    int countEnd = 0, countLinha = 1, section = 0;
+    int pulo_Vetor;
     char inputChar;
-    string inputStr;
+    string inputStr, label_Vetor;
     string arq_PreProcess = PreProcess(argv[1]);
 
     Tabela tabela_Inst = CriaTabela("instrucoes");
@@ -504,17 +506,35 @@ int main(int argc, char const *argv[]) {
             }
             else if(iter == 1) { // // Se for a segunda palavra da linha
                 if(instNode1 != NULL) { // Se a instrução for a PRIMEIRA palavra
-                    simbNode = tabela_Simb.find(p_String);
-                    if (simbNode != NULL) {
-                        if(!simbNode->def) {
-                            tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
-                            toArchiveText.push_back(-1);
+                    if(p_String.find('+') != string::npos) {
+                        label_Vetor = p_String.substr(0,p_String.find('+'));
+                        pulo_Vetor = stoi(p_String.substr(p_String.find('+')));
+                        simbNode = tabela_Simb.find(label_Vetor);
+                        if (simbNode != NULL) {
+                            if(!simbNode->def) {
+                                tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
+                                toArchiveText.push_back(pulo_Vetor);
+                            }
+                            else toArchiveText.push_back(simbNode->end + pulo_Vetor);
                         }
-                        else toArchiveText.push_back(simbNode->end);
+                        else {
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                            toArchiveText.push_back(pulo_Vetor);
+                        }
                     }
                     else {
-                        tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
-                        toArchiveText.push_back(-1);
+                        simbNode = tabela_Simb.find(p_String);
+                        if (simbNode != NULL) {
+                            if(!simbNode->def) {
+                                tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
+                                toArchiveText.push_back(-1);
+                            }
+                            else toArchiveText.push_back(simbNode->end);
+                        }
+                        else {
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                            toArchiveText.push_back(-1);
+                        }
                     }
                 }
                 else {
