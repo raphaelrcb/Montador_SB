@@ -255,7 +255,7 @@ string PreProcess(string arq) {
     char inputChar;
     int val;
     string to_Archive, inputStr, label, dir, outputFile = arq;
-    //outputFile.erase (outputFile.end()-4, outputFile.end());
+    outputFile.erase(outputFile.end()-4, outputFile.end());
     outputFile.append(".pre");
     writeFile = fopen(outputFile.c_str(), "w");
 
@@ -465,7 +465,7 @@ int main(int argc, char const *argv[]) {
 
     FILE* readFile = fopen(arq_PreProcess.c_str(), "r");
     string outputFile = argv[1];
-    //outputFile.erase (outputFile.end()-4, outputFile.end());
+    outputFile.erase (outputFile.end()-4, outputFile.end());
     outputFile.append(".obj");
     FILE* writeFile = fopen(outputFile.c_str(), "w");
 
@@ -528,6 +528,7 @@ int main(int argc, char const *argv[]) {
             }
             else if(iter == 1) { // // Se for a segunda palavra da linha
                 if(instNode1 != NULL) { // Se a instrução for a PRIMEIRA palavra
+                    instNode2 = NULL;
                     if(p_String.find('+') != string::npos) {
                         label_Vetor = p_String.substr(0,p_String.find('+'));
                         label_Vec.push_back(label_Vetor);
@@ -630,6 +631,10 @@ int main(int argc, char const *argv[]) {
                             toArchiveText.push_back(-1);
                         }
                     }
+                }
+                else {
+                    cout << " < ERRO - Instrução com quantidade de operandos inválida ( linha " << countLinha << " ) >" << endl;
+                    break; // vai pra próxima linha
                 }
             }
             else if(iter == 3) { // Se for a quarta palavra da linha
