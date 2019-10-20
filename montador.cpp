@@ -20,7 +20,6 @@ public:
     TabSimPre_Node *head, *tail;
 
     TabelaSimbPre() {
-        cout << "> Criando tabela de símbolos PRE ...\n";
         this->head = NULL;
         this->tail = NULL;
     }
@@ -48,16 +47,6 @@ public:
         if(this->head == NULL) {this->head = new_Label; this->tail = new_Label;}
         else {this->tail->next = new_Label; this->tail = new_Label;}
         return;
-    }
-
-    void print() {
-        TabSimPre_Node* olho = this->head;
-        cout << "Label\t\tDir\t\tVal\n";
-        while(olho != NULL) {
-            if(olho->label.length() > 7) cout << olho->label << "\t" << olho->dir << "\t\t" << olho->val << endl;
-            else cout << olho->label << "\t\t" << olho->dir << "\t\t" << olho->val << endl;
-            olho = olho->next;
-        }
     }
 
     TabSimPre_Node* find(string label) {
@@ -92,7 +81,6 @@ public:
     TabSim_Node *head, *tail;
 
     TabelaSim() {
-        cout << "> Criando tabela de símbolos ...\n";
         this->head = NULL;
         this->tail = NULL;
     }
@@ -191,7 +179,6 @@ public:
     Tabela_Node *head, *tail;
 
     Tabela() {
-        cout << "> Criando tabela ...\n";
         this->head = NULL;
         this->tail = NULL;
     }
@@ -209,15 +196,6 @@ public:
         return;
     }
 
-    void print() {
-        Tabela_Node* olho = this->head;
-        cout << "Inst\tOper\tCód\tSize\n";
-        while(olho != NULL) {
-            cout << olho->name << "\t" << olho->oper << "\t" << olho->opcode << "\t" << olho->size << endl;
-            olho = olho->next;
-        }
-    }
-
     Tabela_Node* find(string inst) {
         Tabela_Node* olho = this->head;
         while(olho != NULL) {
@@ -230,20 +208,16 @@ public:
     }
 };
 
-/* ------------------------------------------------------------------------- */
-
 string PreProcess(string arq) {
     FILE *readFile, *writeFile;
     TabelaSimbPre preSimb;
     TabSimPre_Node* label_Node;
 
-    cout << "> Iniciando o pré-processamento do arquivo \'" << arq << "\'\n"; 
-
     readFile = fopen(arq.c_str(), "r");
     char inputChar;
     int val;
     string to_Archive, inputStr, label, dir, outputFile = arq;
-    outputFile.erase (outputFile.end()-4, outputFile.end());
+    //outputFile.erase (outputFile.end()-4, outputFile.end());
     outputFile.append(".pre");
     writeFile = fopen(outputFile.c_str(), "w");
 
@@ -312,19 +286,13 @@ string PreProcess(string arq) {
 
     }
 
-    //preSimb.print();
-
     fclose(readFile);
     fclose(writeFile);
     preSimb.~TabelaSimbPre();
 
-    cout << "\n> Arquivo Pré-Processado (\'" << outputFile << "\' gerado)\n\n";
-
     return outputFile;
 
 }
-
-/* ------------------------------------------------------------------------- */
 
 Tabela CriaTabela(string c) {
 
@@ -353,8 +321,6 @@ Tabela CriaTabela(string c) {
         tabela.add("IF"     ,  1, -1,  0);
     }
 
-    tabela.print();
-    cout << endl;
     return tabela;
 }
 
@@ -442,12 +408,9 @@ int main(int argc, char const *argv[]) {
 
     FILE* readFile = fopen(arq_PreProcess.c_str(), "r");
     string outputFile = argv[1];
-    outputFile.erase (outputFile.end()-4, outputFile.end());
+    //outputFile.erase (outputFile.end()-4, outputFile.end());
     outputFile.append(".obj");
     FILE* writeFile = fopen(outputFile.c_str(), "w");
-
-    cout << "> Iniciando leitura das labels do arquivo fonte \'" << arq_PreProcess << "\'\n";
-    cout << "> Iniciando montagem do arquivo objeto - \'" << outputFile << "\'\n\n";
 
     while(!feof(readFile)) {
         inputStr = "";
@@ -455,7 +418,6 @@ int main(int argc, char const *argv[]) {
             inputStr+=inputChar;
         }
         verify_line(inputStr, countLinha);
-        cout << "> inputStr = " << inputStr << endl;
         int iter = 0;
         char *p = strtok(strdupa(inputStr.c_str()), " ,");
 
@@ -586,11 +548,11 @@ int main(int argc, char const *argv[]) {
         
     }
 
-    cout << endl;
+   cout << endl;
 
     tabela_Simb.print();
-    cout << "--> Montagem finalizada <--" << endl;
-    cout << "> toArchive =";
+
+    cout << endl << "> toArchive =";
 
     unsigned int i = 0;
     while(i < toArchiveText.size()) {
@@ -611,7 +573,7 @@ int main(int argc, char const *argv[]) {
         if(i < toArchiveData.size()) fprintf(writeFile, "%c", ' ');
     }
 
-    cout << endl;
+    cout << endl << endl;
 
     fclose(readFile);
     fclose(writeFile);
