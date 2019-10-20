@@ -448,6 +448,9 @@ int main(int argc, char const *argv[]) {
     }
 
     vector<int> toArchiveText, toArchiveData;
+    vector<string> label_Vec, simb;
+    vector<int> linha, desloc_Vec, simbSpace;
+
     int countEnd = 0, countLinha = 1, section = 0;
     int pulo_Vetor;
     char inputChar;
@@ -487,6 +490,7 @@ int main(int argc, char const *argv[]) {
                     }
                     instNode1 = NULL;
                     p_String = p_String.substr(0,p_String.find(':'));
+                    simb.push_back(p_String);
                     simbNode = tabela_Simb.find(p_String);
                     if(simbNode != NULL) {
                         if(!simbNode->def) {
@@ -526,7 +530,10 @@ int main(int argc, char const *argv[]) {
                 if(instNode1 != NULL) { // Se a instrução for a PRIMEIRA palavra
                     if(p_String.find('+') != string::npos) {
                         label_Vetor = p_String.substr(0,p_String.find('+'));
+                        label_Vec.push_back(label_Vetor);
                         pulo_Vetor = stoi(p_String.substr(p_String.find('+')));
+                        desloc_Vec.push_back(pulo_Vetor);
+                        linha.push_back(countLinha);
                         simbNode = tabela_Simb.find(label_Vetor);
                         if (simbNode != NULL) {
                             if(!simbNode->def) {
@@ -559,10 +566,15 @@ int main(int argc, char const *argv[]) {
                     dirNode = tabela_Dir.find(p);
                     instNode2 = tabela_Inst.find(p);
                     if(dirNode != NULL) {
-                        if(dirNode->name == "SPACE") toArchiveData.push_back(0);
+                        if(dirNode->name == "SPACE") {
+                            toArchiveData.push_back(0);
+                            simbSpace.push_back(1);
+                        } 
+                        else simb.pop_back();
                         countEnd++;
                     }
                     else if(instNode2 != NULL) {
+                        simb.pop_back();
                         toArchiveText.push_back(instNode2->opcode);
                         countEnd += instNode2->size;
                     }
@@ -572,18 +584,24 @@ int main(int argc, char const *argv[]) {
                     }
                 }
             }
-            else if(iter == 2) {
+            else if(iter == 2) { // Se for a terceira palavra da linha
                 if(dirNode != NULL) {
                     if(dirNode->name == "SPACE") {
-                        toArchiveData.push_back(0);
+                        for(int i = 1; i < atoi(p); i++) {
+                            toArchiveData.push_back(0);
+                        }
+                        simbSpace.pop_back();
+                        simbSpace.push_back(atoi(p));
                         countEnd += atoi(p) - 1;
                     } else toArchiveData.push_back(ConverteHex(p_String));
                 }
                 else if(instNode2 != NULL || (instNode1 != NULL && instNode1->name == "COPY")) { // Se a instrução for a SEGUNDA palavra
                     if(p_String.find('+') != string::npos) {
                         label_Vetor = p_String.substr(0,p_String.find('+'));
+                        label_Vec.push_back(label_Vetor);
                         pulo_Vetor = stoi(p_String.substr(p_String.find('+')));
-                        simbNode = tabela_Simb.find(label_Vetor);
+                        desloc_Vec.push_back(pulo_Vetor);
+                        linha.push_back(countLinha);
                         if (simbNode != NULL) {
                             if(!simbNode->def) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
@@ -614,12 +632,14 @@ int main(int argc, char const *argv[]) {
                     }
                 }
             }
-            else if(iter == 3) { // // Se for a terceira palavra da linha
+            else if(iter == 3) { // Se for a quarta palavra da linha
                 if(instNode2 != NULL && instNode2->name == "COPY") {
                     if(p_String.find('+') != string::npos) {
                         label_Vetor = p_String.substr(0,p_String.find('+'));
+                        label_Vec.push_back(label_Vetor);
                         pulo_Vetor = stoi(p_String.substr(p_String.find('+')));
-                        simbNode = tabela_Simb.find(label_Vetor);
+                        desloc_Vec.push_back(pulo_Vetor);
+                        linha.push_back(countLinha);
                         if (simbNode != NULL) {
                             if(!simbNode->def) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
@@ -647,7 +667,8 @@ int main(int argc, char const *argv[]) {
                         }
                     }
                 } else {
-                    cout << " < ERRO - argumento na 4 palavra sem ser copy ( linha " << countLinha << " )" << endl;
+                    cout << " < ERRO - Instrução com quantidade de operandos inválida ( linha " << countLinha << " ) >" << endl;
+                    break; // vai pra próxima linha
                 }
             }
                     
@@ -660,12 +681,21 @@ int main(int argc, char const *argv[]) {
         
     }
 
-   cout << endl;
+    cout << endl;
 
     tabela_Simb.print();
+    cout << endl;
     tabela_Simb.Check_Def();
 
-    cout << endl << "> toArchive =";
+    for(unsigned int i = 0; i < label_Vec.size(); i++) {
+        for (unsigned int j = 0; j < simb.size(); j++) {
+            if(label_Vec[i] == simb[j] && (desloc_Vec[i] < 0 || desloc_Vec[i] >= simbSpace[j])) {
+                cout << " < ERRO - Acesso de posição não reservada ( linha " << linha[i] << " ) >" << endl;
+            }
+        }
+    }
+
+    cout << "> toArchive =";
 
     unsigned int i = 0;
     while(i < toArchiveText.size()) {
