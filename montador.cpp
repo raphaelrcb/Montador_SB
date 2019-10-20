@@ -580,35 +580,71 @@ int main(int argc, char const *argv[]) {
                     } else toArchiveData.push_back(ConverteHex(p_String));
                 }
                 else if(instNode2 != NULL || (instNode1 != NULL && instNode1->name == "COPY")) { // Se a instrução for a SEGUNDA palavra
-                    simbNode = tabela_Simb.find(p_String);
-                    if(simbNode != NULL) {
-                        if(!simbNode->def) {
-                            if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
-                            else tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
-                            toArchiveText.push_back(-1);
+                    if(p_String.find('+') != string::npos) {
+                        label_Vetor = p_String.substr(0,p_String.find('+'));
+                        pulo_Vetor = stoi(p_String.substr(p_String.find('+')));
+                        simbNode = tabela_Simb.find(label_Vetor);
+                        if (simbNode != NULL) {
+                            if(!simbNode->def) {
+                                tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
+                                toArchiveText.push_back(pulo_Vetor);
+                            }
+                            else toArchiveText.push_back(simbNode->end + pulo_Vetor);
                         }
-                        else toArchiveText.push_back(simbNode->end);
+                        else {
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                            toArchiveText.push_back(pulo_Vetor);
+                        }
                     }
                     else {
-                        if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
-                        else tabela_Simb.addSimbComPend(p, countEnd - 1);
-                        toArchiveText.push_back(-1);
+                        simbNode = tabela_Simb.find(p_String);
+                        if(simbNode != NULL) {
+                            if(!simbNode->def) {
+                                if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
+                                else tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
+                                toArchiveText.push_back(-1);
+                            }
+                            else toArchiveText.push_back(simbNode->end);
+                        }
+                        else {
+                            if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                            else tabela_Simb.addSimbComPend(p, countEnd - 1);
+                            toArchiveText.push_back(-1);
+                        }
                     }
                 }
             }
             else if(iter == 3) { // // Se for a terceira palavra da linha
                 if(instNode2 != NULL && instNode2->name == "COPY") {
-                    simbNode = tabela_Simb.find(p_String);
-                    if (simbNode != NULL) {
-                        if(!simbNode->def) {
-                            tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
-                            toArchiveText.push_back(-1);
+                    if(p_String.find('+') != string::npos) {
+                        label_Vetor = p_String.substr(0,p_String.find('+'));
+                        pulo_Vetor = stoi(p_String.substr(p_String.find('+')));
+                        simbNode = tabela_Simb.find(label_Vetor);
+                        if (simbNode != NULL) {
+                            if(!simbNode->def) {
+                                tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
+                                toArchiveText.push_back(pulo_Vetor);
+                            }
+                            else toArchiveText.push_back(simbNode->end + pulo_Vetor);
                         }
-                        else toArchiveText.push_back(simbNode->end);
+                        else {
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                            toArchiveText.push_back(pulo_Vetor);
+                        }
                     }
                     else {
-                        tabela_Simb.addSimbComPend(p, countEnd - (instNode2->size - iter));
-                        toArchiveText.push_back(-1);
+                        simbNode = tabela_Simb.find(p_String);
+                        if (simbNode != NULL) {
+                            if(!simbNode->def) {
+                                tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
+                                toArchiveText.push_back(-1);
+                            }
+                            else toArchiveText.push_back(simbNode->end);
+                        }
+                        else {
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode2->size - iter));
+                            toArchiveText.push_back(-1);
+                        }
                     }
                 } else {
                     cout << " < ERRO - argumento na 4 palavra sem ser copy ( linha " << countLinha << " )" << endl;
