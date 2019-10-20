@@ -274,7 +274,10 @@ string PreProcess(string arq) {
                 else to_Archive = to_Archive + p_String + '\n';
             }
             else if (iter == 2) {
-                val = atoi(p_String.c_str());
+
+                if(p_String.find('X') == string::npos) val = atoi(p_String.c_str());
+                else p_String[p_String.find('X')] = 'x';
+
                 if(dir != "EQU") {
                     to_Archive = to_Archive.substr(0,to_Archive.find('\n'));
                     if(label == "COPY") to_Archive = to_Archive + ',' + p_String + '\n';
@@ -356,7 +359,7 @@ bool verify_token(std::string token)
         error = true;
     }
 
-    if ( token.find_first_not_of("0123456789") != std::string::npos) //se existir um caracter diferente de número, é uma instrução/diretiva/operador/label
+    if ( token.find_first_not_of("0123456789") != std::string::npos && token.find("0x") == std::string::npos) //se existir um caracter diferente de número, é uma instrução/diretiva/operador/label
     {                                                                //se for uma sequência apenas numérica é um const ou um vetor (space)
         for (int i = 0; i < 10; i++)
         {
@@ -402,7 +405,8 @@ int main(int argc, char const *argv[]) {
         return 0;
     }
 
-    vector<int> toArchiveText, toArchiveData;
+    vector<int> toArchiveText;
+    vector<string> toArchiveData;
     int countEnd = 0, countLinha = 1;
     int section = 0;
     char inputChar;
@@ -492,7 +496,7 @@ int main(int argc, char const *argv[]) {
                     dirNode = tabela_Dir.find(p);
                     instNode2 = tabela_Inst.find(p);
                     if(dirNode != NULL) {
-                        if(dirNode->name == "SPACE") toArchiveData.push_back(0);
+                        if(dirNode->name == "SPACE") toArchiveData.push_back("0");
                         countEnd++;
                     }
                     else if(instNode2 != NULL) {
@@ -508,9 +512,9 @@ int main(int argc, char const *argv[]) {
             else if(iter == 2) {
                 if(dirNode != NULL) {
                     if(dirNode->name == "SPACE") {
-                        toArchiveData.push_back(0);
+                        toArchiveData.push_back("0");
                         countEnd += atoi(p) - 1;
-                    } else toArchiveData.push_back(atoi(p));
+                    } else toArchiveData.push_back(p);
                 }
                 else if(instNode2 != NULL || (instNode1 != NULL && instNode1->name == "COPY")) { // Se a instrução for a SEGUNDA palavra
                     simbNode = tabela_Simb.find(p_String);
@@ -575,9 +579,9 @@ int main(int argc, char const *argv[]) {
     i = 0;
     fprintf(writeFile, "%c", ' ');
     while(i < toArchiveData.size()) {
-        int num = toArchiveData.at(i);
+        string num = toArchiveData.at(i);
         cout << ' ' << num;
-        fprintf(writeFile, "%d", num);
+        fwrite(num.c_str(), sizeof(char), num.length(), writeFile);
         i++;
         if(i < toArchiveData.size()) fprintf(writeFile, "%c", ' ');
     }
