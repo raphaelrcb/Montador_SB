@@ -514,6 +514,9 @@ int main(int argc, char const *argv[]) {
                         if(instNode1 != NULL) { // Se achou a instrução na tabela
                             toArchiveText.push_back(instNode1->opcode);
                             countEnd += instNode1->size;
+                            if (section != 1){
+                                std::cout << "ERRO - Instrução na Seção errada! linha: " << countLinha << std::endl;
+                            }
                         }
                         else {
                             cout << "! Instrução não encontrada ('" << p << "'). ERRO (linha " << countLinha << ") !" << endl; 
@@ -559,12 +562,18 @@ int main(int argc, char const *argv[]) {
                     dirNode = tabela_Dir.find(p);
                     instNode2 = tabela_Inst.find(p);
                     if(dirNode != NULL) {
+                        if (section != 2){
+                            std::cout << "ERRO - Diretiva na Seção errada! linha: " << countLinha << std::endl;
+                        }
                         if(dirNode->name == "SPACE") toArchiveData.push_back(0);
                         countEnd++;
                     }
                     else if(instNode2 != NULL) {
                         toArchiveText.push_back(instNode2->opcode);
                         countEnd += instNode2->size;
+                        if (section != 1){
+                                std::cout << "ERRO - Instrução na Seção errada! linha: " << countLinha << std::endl;
+                        }
                     }
                     else {
                         cout << "< ERRO - Instrução/Diretiva inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
