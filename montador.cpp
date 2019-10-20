@@ -4,6 +4,7 @@
 #include <string>
 #include <stdlib.h>
 #include <vector>
+#include <sstream>
 
 using namespace std;
 
@@ -132,7 +133,9 @@ public:
             return toArchive;
         }
         while(pendAtual->end != -1) {
-            toArchive.at(pendAtual->end) = simbNode->end;
+            if(toArchive.at(pendAtual->end) == -1) toArchive.at(pendAtual->end) = simbNode->end;
+            else toArchive.at(pendAtual->end) += simbNode->end;
+
             pendAtual = pendAtual->next;
         }
         return toArchive;
@@ -222,6 +225,27 @@ public:
     }
 };
 
+int ConverteHex(std::string &s){
+    int numero;
+    std::stringstream ajuda;
+
+    if(s.find("0x") != std::string::npos){
+        if(s.find("-") != std::string::npos){
+            s= s.replace(1,2,"");
+        }else{
+            s = s.replace(0, 2, "");
+        }
+        ajuda << std::hex << s;
+        ajuda >> numero;
+        return numero;
+    }
+
+    if(!(std::istringstream(s) >> numero)){
+        numero = 0;
+    }
+    return numero;
+}
+
 string PreProcess(string arq) {
     FILE *readFile, *writeFile;
     TabelaSimbPre preSimb;
@@ -288,7 +312,14 @@ string PreProcess(string arq) {
                 else to_Archive = to_Archive + p_String + '\n';
             }
             else if (iter == 2) {
-                val = atoi(p_String.c_str());
+
+                if(p_String.find('X') == string::npos) val = atoi(p_String.c_str());
+                else {
+                    for(unsigned int i = 0; i < p_String.length(); i++) {
+                        p_String[i] = tolower(p_String[i]);
+                    }
+                }
+
                 if(dir != "EQU") {
                     to_Archive = to_Archive.substr(0,to_Archive.find('\n'));
                     if(label == "COPY") to_Archive = to_Archive + ',' + p_String + '\n';
@@ -417,10 +448,10 @@ int main(int argc, char const *argv[]) {
     }
 
     vector<int> toArchiveText, toArchiveData;
-    int countEnd = 0, countLinha = 1;
-    int section = 0;
+    int countEnd = 0, countLinha = 1, section = 0;
+    int pulo_Vetor;
     char inputChar;
-    string inputStr;
+    string inputStr, label_Vetor;
     string arq_PreProcess = PreProcess(argv[1]);
 
     Tabela tabela_Inst = CriaTabela("instrucoes");
@@ -493,17 +524,35 @@ int main(int argc, char const *argv[]) {
             }
             else if(iter == 1) { // // Se for a segunda palavra da linha
                 if(instNode1 != NULL) { // Se a instrução for a PRIMEIRA palavra
-                    simbNode = tabela_Simb.find(p_String);
-                    if (simbNode != NULL) {
-                        if(!simbNode->def) {
-                            tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
-                            toArchiveText.push_back(-1);
+                    if(p_String.find('+') != string::npos) {
+                        label_Vetor = p_String.substr(0,p_String.find('+'));
+                        pulo_Vetor = stoi(p_String.substr(p_String.find('+')));
+                        simbNode = tabela_Simb.find(label_Vetor);
+                        if (simbNode != NULL) {
+                            if(!simbNode->def) {
+                                tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
+                                toArchiveText.push_back(pulo_Vetor);
+                            }
+                            else toArchiveText.push_back(simbNode->end + pulo_Vetor);
                         }
-                        else toArchiveText.push_back(simbNode->end);
+                        else {
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                            toArchiveText.push_back(pulo_Vetor);
+                        }
                     }
                     else {
-                        tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
-                        toArchiveText.push_back(-1);
+                        simbNode = tabela_Simb.find(p_String);
+                        if (simbNode != NULL) {
+                            if(!simbNode->def) {
+                                tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
+                                toArchiveText.push_back(-1);
+                            }
+                            else toArchiveText.push_back(simbNode->end);
+                        }
+                        else {
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                            toArchiveText.push_back(-1);
+                        }
                     }
                 }
                 else {
@@ -528,7 +577,7 @@ int main(int argc, char const *argv[]) {
                     if(dirNode->name == "SPACE") {
                         toArchiveData.push_back(0);
                         countEnd += atoi(p) - 1;
-                    } else toArchiveData.push_back(atoi(p));
+                    } else toArchiveData.push_back(ConverteHex(p_String));
                 }
                 else if(instNode2 != NULL || (instNode1 != NULL && instNode1->name == "COPY")) { // Se a instrução for a SEGUNDA palavra
                     simbNode = tabela_Simb.find(p_String);
