@@ -155,6 +155,20 @@ public:
         }
     }
 
+    void Check_Def() {
+        TabSim_Node* olho_Simb = this->head;
+        // Pend_Node* olho_Pend = olho_Simb->pendHead;
+        while (olho_Simb != NULL)
+        {
+            if (!olho_Simb->def)
+            {
+                std::cout << "ERRO - Definição de  " << olho_Simb->simb << " ausente!" << std::endl;
+            }
+            
+            olho_Simb = olho_Simb->next;            
+        }        
+    }
+
     TabSim_Node* find(string simb) {
         TabSim_Node* olho = this->head;
         while(olho != NULL) {
@@ -356,7 +370,7 @@ bool verify_token(std::string token)
         error = true;
     }
 
-    if ( token.find_first_not_of("0123456789") != std::string::npos) //se existir um caracter diferente de número, é uma instrução/diretiva/operador/label
+    if ( token.find_first_not_of("0123456789") != std::string::npos && token.find("0x") == std::string::npos) //se existir um caracter diferente de número, é uma instrução/diretiva/operador/label
     {                                                                //se for uma sequência apenas numérica é um const ou um vetor (space)
         for (int i = 0; i < 10; i++)
         {
@@ -436,6 +450,10 @@ int main(int argc, char const *argv[]) {
 
             if(iter == 0) { // Se for a primeira palavra da linha
                 if(p_String.find(':') != string::npos) {
+                    if (p_String.rfind(':') != p_String.find(':'))
+                    {
+                        std::cout << "ERRO - dupla declaração de rótulo na linha " << countLinha << std::endl;
+                    }
                     instNode1 = NULL;
                     p_String = p_String.substr(0,p_String.find(':'));
                     simbNode = tabela_Simb.find(p_String);
@@ -560,6 +578,7 @@ int main(int argc, char const *argv[]) {
    cout << endl;
 
     tabela_Simb.print();
+    tabela_Simb.Check_Def();
 
     cout << endl << "> toArchive =";
 
