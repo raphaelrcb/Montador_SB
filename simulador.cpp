@@ -363,10 +363,10 @@ std::vector< int > Get_memory(std::ifstream & file)
 
     std::getline(file, obj_conteudo);
 
-    char conteudo[obj_conteudo.size()];
-    strcpy(conteudo, obj_conteudo.c_str());
+    // char conteudo[obj_conteudo.size()];
+    // strcpy(conteudo, obj_conteudo.c_str());
 
-    char * tokens = strtok( conteudo, " " );
+    char * tokens = strtok(strdupa(obj_conteudo.c_str()), " " );
 
     while (tokens != NULL) //separa a string em tokens 
     {

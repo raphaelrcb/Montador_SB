@@ -20,7 +20,6 @@ public:
     TabSimPre_Node *head, *tail;
 
     TabelaSimbPre() {
-        cout << "> Criando tabela de símbolos PRE ...\n";
         this->head = NULL;
         this->tail = NULL;
     }
@@ -48,16 +47,6 @@ public:
         if(this->head == NULL) {this->head = new_Label; this->tail = new_Label;}
         else {this->tail->next = new_Label; this->tail = new_Label;}
         return;
-    }
-
-    void print() {
-        TabSimPre_Node* olho = this->head;
-        cout << "Label\t\tDir\t\tVal\n";
-        while(olho != NULL) {
-            if(olho->label.length() > 7) cout << olho->label << "\t" << olho->dir << "\t\t" << olho->val << endl;
-            else cout << olho->label << "\t\t" << olho->dir << "\t\t" << olho->val << endl;
-            olho = olho->next;
-        }
     }
 
     TabSimPre_Node* find(string label) {
@@ -92,13 +81,25 @@ public:
     TabSim_Node *head, *tail;
 
     TabelaSim() {
-        cout << "> Criando tabela de símbolos ...\n";
         this->head = NULL;
         this->tail = NULL;
     }
     ~TabelaSim(){}
     
-    void addSimb(string simb, int end) {
+    void addSimbSemPend(string simb, int end) {
+        TabSim_Node* new_Simb = new TabSim_Node();
+        new_Simb->simb = simb;
+        new_Simb->def = true;
+        new_Simb->end = end;
+        new_Simb->next = NULL;
+        if(this->head == NULL) {this->head = new_Simb; this->tail = new_Simb;}
+        else {this->tail->next = new_Simb; this->tail = new_Simb;}
+        new_Simb->pendHead = new Pend_Node();
+        new_Simb->pendHead->end = -1;
+        new_Simb->pendHead->next = NULL;
+    }
+
+    void addSimbComPend(string simb, int end) {
         TabSim_Node* new_Simb = new TabSim_Node();
         new_Simb->simb = simb;
         new_Simb->def = false;
@@ -142,7 +143,8 @@ public:
         Pend_Node* olho_Pend = olho_Simb->pendHead;
         cout << "Simb\t\tEnd\t\tDef\tPend\n";
         while(olho_Simb != NULL) {
-            cout << olho_Simb->simb << "\t\t" << olho_Simb->end << "\t\t" << olho_Simb->def << "\t";
+            if(olho_Simb->simb.length() > 7) cout << olho_Simb->simb << "\t" << olho_Simb->end << "\t\t" << olho_Simb->def << "\t";
+            else cout << olho_Simb->simb << "\t\t" << olho_Simb->end << "\t\t" << olho_Simb->def << "\t";
             while(olho_Pend != NULL) {
                 cout << olho_Pend->end << ',';
                 olho_Pend = olho_Pend->next;
@@ -177,7 +179,6 @@ public:
     Tabela_Node *head, *tail;
 
     Tabela() {
-        cout << "> Criando tabela ...\n";
         this->head = NULL;
         this->tail = NULL;
     }
@@ -195,15 +196,6 @@ public:
         return;
     }
 
-    void print() {
-        Tabela_Node* olho = this->head;
-        cout << "Inst\tOper\tCód\tSize\n";
-        while(olho != NULL) {
-            cout << olho->name << "\t" << olho->oper << "\t" << olho->opcode << "\t" << olho->size << endl;
-            olho = olho->next;
-        }
-    }
-
     Tabela_Node* find(string inst) {
         Tabela_Node* olho = this->head;
         while(olho != NULL) {
@@ -219,155 +211,96 @@ public:
 string PreProcess(string arq) {
     FILE *readFile, *writeFile;
     TabelaSimbPre preSimb;
-
-    cout << "> Iniciando o pré-processamento do arquivo \'" << arq << "\'\n\n"; 
+    TabSimPre_Node* label_Node;
 
     readFile = fopen(arq.c_str(), "r");
-    string outputFile = arq;
-    outputFile.erase (outputFile.end()-4, outputFile.end());
+    char inputChar;
+    int val;
+    string to_Archive, inputStr, label, dir, outputFile = arq;
+    //outputFile.erase (outputFile.end()-4, outputFile.end());
     outputFile.append(".pre");
     writeFile = fopen(outputFile.c_str(), "w");
 
-    char input;
-    string label, dir, val_str, to_archive;
-    int val;
+    while(!feof(readFile)) { 
+        inputStr = "";
 
-    while((input = getc(readFile)) != EOF) {
-
-        TabSimPre_Node* label_Node;
         label = "";
         dir = "";
-        val_str = "";
         val = 0;
 
-        if(input == '\t' || input == ' ') { // Se input for tab ou espaço
-            if(ftell(readFile) == 1) {
-                continue;
-            } else {
-                while((input = getc(readFile)) != EOF) {
-                    if(input != ' ' && input != '\t') break;
-                }
-                input = ' ';
-                fwrite(&input, sizeof(char), sizeof(input), writeFile);
-                fseek(readFile, -1, SEEK_CUR);
-                continue;
-            }
-        } else if(input == ';') { // Se input for ponto e vírgula (comentário)
-            while((input = getc(readFile)) != EOF) {
-                if(input == '\n') break;
-            }
-            fwrite(&input, sizeof(char), sizeof(input), writeFile);
-            while((input = getc(readFile)) != EOF) {
-                    if(input != ' ' && input != '\t') break;
-            }
-            fseek(readFile, -1, SEEK_CUR);
-            continue;
-        } else {                    // Se input for um caracter 'normal'
-            label+=toupper(input);
-            while((input = getc(readFile)) != EOF) { // Procurando o label
-                if(input == '\n') { // Se input for quebra de linha
-                    to_archive = label + '\n';
-                    while((input = getc(readFile)) != EOF) {
-                        if(input != ' ' && input != '\t') break;
-                    }
-                    fseek(readFile, -1, SEEK_CUR);
-                    break;
-                } else if(input == ' ' || input == '\t' || input == ';') { // Se input for tab, espaço ou ponto e vírgula
-                    to_archive = label;
-                    if(to_archive == "IF") {
-                        label = "";
-                        while((input = getc(readFile)) != EOF) {
-                            if(input != ' ' && input != '\t') break;
-                        }
-                        label+=toupper(input);
-                        while((input = getc(readFile)) != EOF) {
-                            if(input == '\n') break;
-                            label+=toupper(input);
-                        }
-                        while((input = getc(readFile)) != EOF) {
-                            if(input != ' ' && input != '\t') break;
-                        }
-                        label_Node = preSimb.find(label);
-                        if(label_Node == NULL) {
-                            cout << "< ERRO > " << (*label_Node).label << endl;
-                            fclose(readFile);
-                            fclose(writeFile);
-                            return outputFile;
-                        }
-                        to_archive = "";
-                        if((*label_Node).dir == "EQU") {
-                            if((*label_Node).val == 0) {
-                                while((input = getc(readFile)) != EOF) {
-                                    if(input == '\n') break;
-                                }
-                                while((input = getc(readFile)) != EOF) {
-                                    if(input != ' ' && input != '\t') break;
-                                }
+        while((inputChar = getc(readFile)) != EOF && inputChar != '\n') inputStr+=inputChar;
 
-                            }
-                        }
-                    }
-                    fseek(readFile, -1, SEEK_CUR);
+        to_Archive = "";
+        int iter = 0;
+        char *p = strtok(strdupa(inputStr.c_str()), " \t,");
 
-                    break;
-                } else if (input == ':') {
-                    while((input = getc(readFile)) != EOF) { // Procurando o dir
-                        if(input != ' ' && input != '\t') break;
-                    }
-                    dir+=input;
-                    while((input = getc(readFile)) != EOF) {
-                        if(input == '\n') {
-                            while((input = getc(readFile)) != EOF) {
-                                if(input != ' ' && input != '\t') break;
-                            }
-                            fseek(readFile, -1, SEEK_CUR);
-                            if(dir == "EQU") preSimb.add(label,dir);
-                            to_archive = label + ": " + dir + '\n';
-                            break;
-                        } else if(input == ' ' || input == '\t') {
-                            while((input = getc(readFile)) != EOF) { // Procurando o oper
-                                if(input != ' ' && input != '\t') break;
-                            }
-                            val_str +=input;
-                            while((input = getc(readFile)) != EOF) { // Tratando o oper
-                                if(input == '\n') {
-                                    while((input = getc(readFile)) != EOF) {
-                                        if(input != ' ' && input != '\t') break;
-                                    }
-                                    fseek(readFile, -1, SEEK_CUR);
-                                    val = atoi(val_str.c_str());
-                                    if(dir == "EQU") preSimb.add(label,dir,val);
-                                    to_archive = label + ": " + dir + ' ' + val_str + '\n';
-                                    break;
-                                }
-                                val_str+=input;
-                            }
-                            if(input == EOF) {
-                                val = atoi(val_str.c_str());
-                                if(dir == "EQU") preSimb.add(label,dir,val);
-                                to_archive = label + ": " + dir + ' ' + val_str;
-                            }
-                            break;
-                        }
-                        dir+=input;
-                    }
-                    break;
-                }
-                label+=input;
+        while(p != NULL) {
+            string p_String = p;
+            for(unsigned int i = 0; i < p_String.length(); i++) {
+                p_String[i] = toupper(p_String[i]);
             }
-            if (dir != "EQU") fwrite(to_archive.c_str(), sizeof(char), to_archive.length(), writeFile);
+
+            if (iter == 0) {
+                label = p_String;
+                if(p_String == "STOP" || p_String == "SPACE" || p_String == "CONST") to_Archive = p_String + '\n';
+                else if(label.find(':') != string::npos) to_Archive = p_String + ' ';
+                else if(label.find(':') == string::npos && p_String != "IF") to_Archive = p_String + ' ';
+            }
+            else if (iter == 1) {
+                if(label.find(':') != string::npos) {
+                    dir = p_String;
+                    if(dir != "EQU") to_Archive = label + ' ' + dir + '\n';
+                    else to_Archive = "";
+                    label = label.substr(0,label.find(':'));
+                }
+                else if (label == "IF") {
+                    label_Node = preSimb.find(p_String);
+                    if (label_Node == NULL) {
+                        cout << "< ERRO > '" << p_String << "' não encontrado" << endl << endl;
+                        fclose(readFile);
+                        fclose(writeFile);
+                        return outputFile;
+                    }
+                    if((*label_Node).dir == "EQU") {
+                        if((*label_Node).val == 0) {
+                            while((inputChar = getc(readFile)) != EOF) if(inputChar == '\n') break;
+                        }
+                    }
+                }
+                else if(label == "SPACE" || label == "CONST") {
+                    to_Archive = to_Archive.substr(0,to_Archive.find('\n'));
+                    to_Archive = to_Archive + ' ' + p_String + '\n';
+                }
+                else to_Archive = to_Archive + p_String + '\n';
+            }
+            else if (iter == 2) {
+                val = atoi(p_String.c_str());
+                if(dir != "EQU") {
+                    to_Archive = to_Archive.substr(0,to_Archive.find('\n'));
+                    if(label == "COPY") to_Archive = to_Archive + ',' + p_String + '\n';
+                    else to_Archive = to_Archive + ' ' + p_String + '\n';
+                }
+                if(dir == "EQU") {
+                    preSimb.add(label,dir,val);
+                }
+            }
+
+            p = strtok(NULL, " \t,");
+            iter++;
         }
-    }
 
-    preSimb.print();
+        if(inputChar == EOF) to_Archive = to_Archive.substr(0,to_Archive.find('\n'));
+
+        fwrite(to_Archive.c_str(), sizeof(char), to_Archive.length(), writeFile);
+
+    }
 
     fclose(readFile);
     fclose(writeFile);
     preSimb.~TabelaSimbPre();
 
-    cout << "\n> Arquivo Pré-Processado (\'" << outputFile << "\' gerado)\n\n";
-
     return outputFile;
+
 }
 
 Tabela CriaTabela(string c) {
@@ -397,9 +330,69 @@ Tabela CriaTabela(string c) {
         tabela.add("IF"     ,  1, -1,  0);
     }
 
-    tabela.print();
-    cout << endl;
     return tabela;
+}
+
+bool verify_token(std::string token) 
+{
+    // std::cout << "verify" << std::endl;
+    char num = '0';
+    bool error = false;
+
+    if ((token.find("!") != std::string::npos) || (token.find("@") != std::string::npos) || 
+        (token.find("#") != std::string::npos) || (token.find("$") != std::string::npos) || 
+        (token.find("%") != std::string::npos) || (token.find("&") != std::string::npos) || 
+        (token.find("*") != std::string::npos) || (token.find("(") != std::string::npos) || 
+        (token.find(")") != std::string::npos) || (token.find("-") != std::string::npos) || 
+        (token.find("=") != std::string::npos) || (token.find("{") != std::string::npos) || 
+        (token.find("}") != std::string::npos) || (token.find("[") != std::string::npos) || 
+        (token.find("]") != std::string::npos) || (token.find("~") != std::string::npos) || 
+        (token.find("^") != std::string::npos) || (token.find(";") != std::string::npos) || 
+        (token.find(".") != std::string::npos) || (token.find("<") != std::string::npos) || 
+        (token.find(">") != std::string::npos) || (token.find("?") != std::string::npos) || 
+        (token.find("/") != std::string::npos) || (token.find("|") != std::string::npos) || 
+        (token.find("\"") != std::string::npos) || (token.find("\'") != std::string::npos) )
+    {
+        error = true;
+    }
+
+    if ( token.find_first_not_of("0123456789") != std::string::npos) //se existir um caracter diferente de número, é uma instrução/diretiva/operador/label
+    {                                                                //se for uma sequência apenas numérica é um const ou um vetor (space)
+        for (int i = 0; i < 10; i++)
+        {
+            num = i + '0';
+            if (token.find(num) == 0)//se uma instrução/diretiva/operador/label começa com número, é erro léxico
+                error = true;
+        }
+        
+    }
+    
+    return error;
+}
+
+int verify_line(std::string line, int linha) 
+{
+    std::vector < std::string> token;
+    // char line_char[line.size()];
+    // string line_str;
+    // line_str = line;
+    // strcpy(line_char, line.c_str());
+    
+    char * tok = strtok(strdupa(line.c_str()), " ," );
+
+    while (tok != NULL) //separa a string em tokens
+    {
+        // std::cout << tokens << '\n';
+        token.push_back(tok);
+        tok = strtok(NULL, " ,");
+    }
+
+    for (size_t i = 0; i < token.size(); i++)
+    {            
+        if(verify_token(token[i]))//para cada token verifica se tem erro léxico
+            std::cout << "ERRO LEXICO NA LINHA:" << linha << std::endl;
+    }
+    return linha;
 }
 
 int main(int argc, char const *argv[]) {
@@ -409,139 +402,187 @@ int main(int argc, char const *argv[]) {
         return 0;
     }
 
-    vector<int> toArchive;
-    int countEnd = 0;
+    vector<int> toArchiveText, toArchiveData;
+    int countEnd = 0, countLinha = 1;
+    int section = 0;
     char inputChar;
     string inputStr;
     string arq_PreProcess = PreProcess(argv[1]);
 
     Tabela tabela_Inst = CriaTabela("instrucoes");
     Tabela tabela_Dir = CriaTabela("diretivas");
-    Tabela_Node *instNode, *dirNode;
+    Tabela_Node *instNode1, *instNode2, *dirNode;
     TabelaSim tabela_Simb;
     TabSim_Node* simbNode;
 
     FILE* readFile = fopen(arq_PreProcess.c_str(), "r");
     string outputFile = argv[1];
-    outputFile.erase (outputFile.end()-4, outputFile.end());
+    //outputFile.erase (outputFile.end()-4, outputFile.end());
     outputFile.append(".obj");
     FILE* writeFile = fopen(outputFile.c_str(), "w");
-
-    cout << "> Iniciando leitura das labels do arquivo fonte \'" << arq_PreProcess << "\'\n";
-    cout << "> Iniciando montagem do arquivo objeto - \'" << outputFile << "\'\n";
 
     while(!feof(readFile)) {
         inputStr = "";
         while((inputChar = getc(readFile)) != EOF && inputChar != '\n') {
             inputStr+=inputChar;
         }
+        verify_line(inputStr, countLinha);
+        int iter = 0;
+        char *p = strtok(strdupa(inputStr.c_str()), " ,");
 
-        if(inputStr == "SECTION TEXT") { // Montagem da section text (instruções e pendências)
-            cout << "  > Iniciando montagem SECTION TEXT" << endl;
-            while(!feof(readFile)) {
-                inputStr = "";
-                while((inputChar = getc(readFile)) != EOF && inputChar != '\n') inputStr+=inputChar; 
-               
-                cout << "> inputStr = " << inputStr << endl;
-                int iter = 0;
-                char *p = strtok(strdupa(inputStr.c_str()), " ,");
+        while(p != NULL) {
 
-                while(p != NULL) {
+            string p_String = p;
 
-                    if(iter == 0) {
-                        instNode = tabela_Inst.find(p);
-                        if (instNode != NULL) { // Se achou a instrução na tabela
-                            toArchive.push_back(instNode->opcode);
-                            countEnd += instNode->size;
+            if(iter == 0) { // Se for a primeira palavra da linha
+                if(p_String.find(':') != string::npos) {
+                    instNode1 = NULL;
+                    p_String = p_String.substr(0,p_String.find(':'));
+                    simbNode = tabela_Simb.find(p_String);
+                    if(simbNode != NULL) {
+                        if(!simbNode->def) {
+                            toArchiveText = tabela_Simb.resolvePend(simbNode, countEnd, toArchiveText);
                         }
-                        else cout << "! Instrução não encontrada ('" << p << "'). ERRO !" << endl;    
+                        else cout << " ERRO - Label já definida !!! ( Linha " << countLinha << " ) " << endl;
                     }
-                    else { // é algum operando (label)
-                        simbNode = tabela_Simb.find(p);
-                        if(simbNode != NULL) {
-                            tabela_Simb.addPend(simbNode, countEnd - iter);
-
+                    else { // se label n foi mencionada ainda
+                        tabela_Simb.addSimbSemPend(p_String, countEnd);
+                    }
+                }
+                else {
+                    if(p_String == "SECTION") {
+                        p = strtok(NULL, " ,");
+                        p_String = p;
+                        if(p_String == "TEXT") {
+                            section = 1;
+                        } else if(p_String == "DATA") {
+                            section = 2;
+                        }
+                        else cout << "< ERRO - Section inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
+                    }
+                    else {
+                        instNode1 = tabela_Inst.find(p);
+                        if(instNode1 != NULL) { // Se achou a instrução na tabela
+                            toArchiveText.push_back(instNode1->opcode);
+                            countEnd += instNode1->size;
                         }
                         else {
-                            tabela_Simb.addSimb(p, countEnd - iter);
+                            cout << "! Instrução não encontrada ('" << p << "'). ERRO (linha " << countLinha << ") !" << endl; 
+                            break; // Vai pra próxima linha    
                         }
-
-                        toArchive.push_back(-1);
                     }
-                    
-                    iter++;
-                    p = strtok(NULL, " ,");
-
-                }
-
-                if(inputStr == "STOP") break;
-
-            }
-        }
-        else if(inputStr == "SECTION DATA") {  // // Montagem da section data (definição e resolução de pendências)
-            cout << "  > Iniciando montagem SECTION DATA" << endl;
-            while(!feof(readFile)) {
-                inputStr = "";
-                while((inputChar = getc(readFile)) != EOF && inputChar != '\n') inputStr+=inputChar; 
-               
-                cout << "> inputStr = " << inputStr << endl;
-                int iter = 0;
-                char *p = strtok(strdupa(inputStr.c_str()), " :");
-
-                while(p != NULL) {
-
-                    if(iter == 0) {
-                        simbNode = tabela_Simb.find(p);
-                        if (simbNode != NULL) { // Se achou a instrução na tabela
-                            toArchive = tabela_Simb.resolvePend(simbNode, countEnd, toArchive);
-
-                        }
-                        else {
-                            cout << "Novo símbolo ('" << p << "') sem  encontrado." << endl;
-                            
-                        } 
-                    }
-                    else if(iter == 1) { // é algum operando (label)
-
-                        dirNode = tabela_Dir.find(p);
-                        if(dirNode != NULL) {
-                            if(dirNode->name == "SPACE") toArchive.push_back(0);
-                            countEnd++;
-                        }
-                        else cout << "! Diretiva não encontrada ('" << p << "'). ERRO !" << endl;
-
-                    } else if(iter == 2) {
-                        if(dirNode->name == "SPACE") {
-                            toArchive.push_back(0);
-                            countEnd += atoi(p) - 1;
-                        } else toArchive.push_back(atoi(p));
-                    }
-                    
-                    iter++;
-                    p = strtok(NULL, " ");
-
                 }
             }
+            else if(iter == 1) { // // Se for a segunda palavra da linha
+                if(instNode1 != NULL) { // Se a instrução for a PRIMEIRA palavra
+                    simbNode = tabela_Simb.find(p_String);
+                    if (simbNode != NULL) {
+                        if(!simbNode->def) {
+                            tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
+                            toArchiveText.push_back(-1);
+                        }
+                        else toArchiveText.push_back(simbNode->end);
+                    }
+                    else {
+                        tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                        toArchiveText.push_back(-1);
+                    }
+                }
+                else {
+                    dirNode = tabela_Dir.find(p);
+                    instNode2 = tabela_Inst.find(p);
+                    if(dirNode != NULL) {
+                        if(dirNode->name == "SPACE") toArchiveData.push_back(0);
+                        countEnd++;
+                    }
+                    else if(instNode2 != NULL) {
+                        toArchiveText.push_back(instNode2->opcode);
+                        countEnd += instNode2->size;
+                    }
+                    else {
+                        cout << "< ERRO - Instrução/Diretiva inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
+                        break; // vai pra próxima linha
+                    }
+                }
+            }
+            else if(iter == 2) {
+                if(dirNode != NULL) {
+                    if(dirNode->name == "SPACE") {
+                        toArchiveData.push_back(0);
+                        countEnd += atoi(p) - 1;
+                    } else toArchiveData.push_back(atoi(p));
+                }
+                else if(instNode2 != NULL || (instNode1 != NULL && instNode1->name == "COPY")) { // Se a instrução for a SEGUNDA palavra
+                    simbNode = tabela_Simb.find(p_String);
+                    if(simbNode != NULL) {
+                        if(!simbNode->def) {
+                            if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
+                            else tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
+                            toArchiveText.push_back(-1);
+                        }
+                        else toArchiveText.push_back(simbNode->end);
+                    }
+                    else {
+                        if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                        else tabela_Simb.addSimbComPend(p, countEnd - 1);
+                        toArchiveText.push_back(-1);
+                    }
+                }
+            }
+            else if(iter == 3) { // // Se for a terceira palavra da linha
+                if(instNode2 != NULL && instNode2->name == "COPY") {
+                    simbNode = tabela_Simb.find(p_String);
+                    if (simbNode != NULL) {
+                        if(!simbNode->def) {
+                            tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
+                            toArchiveText.push_back(-1);
+                        }
+                        else toArchiveText.push_back(simbNode->end);
+                    }
+                    else {
+                        tabela_Simb.addSimbComPend(p, countEnd - (instNode2->size - iter));
+                        toArchiveText.push_back(-1);
+                    }
+                } else {
+                    cout << " < ERRO - argumento na 4 palavra sem ser copy ( linha " << countLinha << " )" << endl;
+                }
+            }
+                    
+            iter++;
+            p = strtok(NULL, " ,");
+
         }
 
-        cout << endl;
-    
+        countLinha++;
+        
     }
 
+   cout << endl;
+
     tabela_Simb.print();
-    cout << "--> Montagem finalizada <--" << endl;
-    cout << "> toArchive =";
+
+    cout << endl << "> toArchive =";
 
     unsigned int i = 0;
-    while(i < toArchive.size()) {
-        int num = toArchive.at(i);
+    while(i < toArchiveText.size()) {
+        int num = toArchiveText.at(i);
         cout << ' ' << num;
         fprintf(writeFile, "%d", num);
         i++;
-        if(i < toArchive.size()) fprintf(writeFile, "%c", ' ');
+        if(i < toArchiveText.size()) fprintf(writeFile, "%c", ' ');
     }
 
-    cout << endl;
+    i = 0;
+    fprintf(writeFile, "%c", ' ');
+    while(i < toArchiveData.size()) {
+        int num = toArchiveData.at(i);
+        cout << ' ' << num;
+        fprintf(writeFile, "%d", num);
+        i++;
+        if(i < toArchiveData.size()) fprintf(writeFile, "%c", ' ');
+    }
+
+    cout << endl << endl;
 
     fclose(readFile);
     fclose(writeFile);
