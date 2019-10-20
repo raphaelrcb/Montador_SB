@@ -449,6 +449,7 @@ int main(int argc, char const *argv[]) {
 
     vector<int> toArchiveText, toArchiveData;
     int countEnd = 0, countLinha = 1, section = 0;
+    bool section_text = false;
     int pulo_Vetor;
     char inputChar;
     string inputStr, label_Vetor;
@@ -504,6 +505,7 @@ int main(int argc, char const *argv[]) {
                         p_String = p;
                         if(p_String == "TEXT") {
                             section = 1;
+                            section_text = true;
                         } else if(p_String == "DATA") {
                             section = 2;
                         }
@@ -669,10 +671,14 @@ int main(int argc, char const *argv[]) {
         
     }
 
-   cout << endl;
-
-    tabela_Simb.print();
     tabela_Simb.Check_Def();
+    if (!section_text){
+        std::cout << "ERRO - seção TEXT faltante!" << std::endl;
+    }
+
+    cout << endl;
+    
+    tabela_Simb.print();
 
     cout << endl << "> toArchive =";
 
