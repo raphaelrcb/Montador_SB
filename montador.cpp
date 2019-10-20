@@ -236,16 +236,21 @@ string PreProcess(string arq) {
 
         while(p != NULL) {
             string p_String = p;
+            for(unsigned int i = 0; i < p_String.length(); i++) {
+                p_String[i] = toupper(p_String[i]);
+            }
 
             if (iter == 0) {
                 label = p_String;
-                if(p_String == "STOP") to_Archive = p_String + '\n';
+                if(p_String == "STOP" || p_String == "SPACE" || p_String == "CONST") to_Archive = p_String + '\n';
+                else if(label.find(':') != string::npos) to_Archive = p_String + ' ';
                 else if(label.find(':') == string::npos && p_String != "IF") to_Archive = p_String + ' ';
             }
             else if (iter == 1) {
                 if(label.find(':') != string::npos) {
                     dir = p_String;
                     if(dir != "EQU") to_Archive = label + ' ' + dir + '\n';
+                    else to_Archive = "";
                     label = label.substr(0,label.find(':'));
                 }
                 else if (label == "IF") {
@@ -261,6 +266,10 @@ string PreProcess(string arq) {
                             while((inputChar = getc(readFile)) != EOF) if(inputChar == '\n') break;
                         }
                     }
+                }
+                else if(label == "SPACE" || label == "CONST") {
+                    to_Archive = to_Archive.substr(0,to_Archive.find('\n'));
+                    to_Archive = to_Archive + ' ' + p_String + '\n';
                 }
                 else to_Archive = to_Archive + p_String + '\n';
             }
