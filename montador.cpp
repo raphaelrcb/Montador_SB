@@ -436,6 +436,10 @@ int main(int argc, char const *argv[]) {
 
             if(iter == 0) { // Se for a primeira palavra da linha
                 if(p_String.find(':') != string::npos) {
+                    if (p_String.rfind(':') != p_String.find(':'))
+                    {
+                        std::cout << "ERRO - dupla declaração de rótulo na linha " << countLinha << std::endl;
+                    }
                     instNode1 = NULL;
                     p_String = p_String.substr(0,p_String.find(':'));
                     simbNode = tabela_Simb.find(p_String);
