@@ -4,6 +4,7 @@
 #include <string>
 #include <stdlib.h>
 #include <vector>
+#include <sstream>
 
 using namespace std;
 
@@ -208,6 +209,27 @@ public:
     }
 };
 
+int ConverteHex(std::string &s){
+    int numero;
+    std::stringstream ajuda;
+
+    if(s.find("0x") != std::string::npos){
+        if(s.find("-") != std::string::npos){
+            s= s.replace(1,2,"");
+        }else{
+            s = s.replace(0, 2, "");
+        }
+        ajuda << std::hex << s;
+        ajuda >> numero;
+        return numero;
+    }
+
+    if(!(std::istringstream(s) >> numero)){
+        numero = 0;
+    }
+    return numero;
+}
+
 string PreProcess(string arq) {
     FILE *readFile, *writeFile;
     TabelaSimbPre preSimb;
@@ -276,7 +298,11 @@ string PreProcess(string arq) {
             else if (iter == 2) {
 
                 if(p_String.find('X') == string::npos) val = atoi(p_String.c_str());
-                else p_String[p_String.find('X')] = 'x';
+                else {
+                    for(unsigned int i = 0; i < p_String.length(); i++) {
+                        p_String[i] = tolower(p_String[i]);
+                    }
+                }
 
                 if(dir != "EQU") {
                     to_Archive = to_Archive.substr(0,to_Archive.find('\n'));
@@ -405,8 +431,7 @@ int main(int argc, char const *argv[]) {
         return 0;
     }
 
-    vector<int> toArchiveText;
-    vector<string> toArchiveData;
+    vector<int> toArchiveText, toArchiveData;
     int countEnd = 0, countLinha = 1;
     int section = 0;
     char inputChar;
@@ -496,7 +521,7 @@ int main(int argc, char const *argv[]) {
                     dirNode = tabela_Dir.find(p);
                     instNode2 = tabela_Inst.find(p);
                     if(dirNode != NULL) {
-                        if(dirNode->name == "SPACE") toArchiveData.push_back("0");
+                        if(dirNode->name == "SPACE") toArchiveData.push_back(0);
                         countEnd++;
                     }
                     else if(instNode2 != NULL) {
@@ -512,9 +537,9 @@ int main(int argc, char const *argv[]) {
             else if(iter == 2) {
                 if(dirNode != NULL) {
                     if(dirNode->name == "SPACE") {
-                        toArchiveData.push_back("0");
+                        toArchiveData.push_back(0);
                         countEnd += atoi(p) - 1;
-                    } else toArchiveData.push_back(p);
+                    } else toArchiveData.push_back(ConverteHex(p_String));
                 }
                 else if(instNode2 != NULL || (instNode1 != NULL && instNode1->name == "COPY")) { // Se a instrução for a SEGUNDA palavra
                     simbNode = tabela_Simb.find(p_String);
@@ -579,9 +604,9 @@ int main(int argc, char const *argv[]) {
     i = 0;
     fprintf(writeFile, "%c", ' ');
     while(i < toArchiveData.size()) {
-        string num = toArchiveData.at(i);
+        int num = toArchiveData.at(i);
         cout << ' ' << num;
-        fwrite(num.c_str(), sizeof(char), num.length(), writeFile);
+        fprintf(writeFile, "%d", num);
         i++;
         if(i < toArchiveData.size()) fprintf(writeFile, "%c", ' ');
     }
