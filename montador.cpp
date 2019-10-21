@@ -71,7 +71,7 @@ public:
 class TabSim_Node {
 public:
     string simb;
-    bool def;
+    bool def, jmpble;
     int end;
     TabSim_Node* next;
     Pend_Node* pendHead;
@@ -87,11 +87,12 @@ public:
     }
     ~TabelaSim(){}
     
-    void addSimbSemPend(string simb, int end) {
+    void addSimbSemPend(string simb, int end, bool jmpble) {
         TabSim_Node* new_Simb = new TabSim_Node();
         new_Simb->simb = simb;
         new_Simb->def = true;
         new_Simb->end = end;
+        new_Simb->jmpble = jmpble;
         new_Simb->next = NULL;
         if(this->head == NULL) {this->head = new_Simb; this->tail = new_Simb;}
         else {this->tail->next = new_Simb; this->tail = new_Simb;}
@@ -100,11 +101,12 @@ public:
         new_Simb->pendHead->next = NULL;
     }
 
-    void addSimbComPend(string simb, int end) {
+    void addSimbComPend(string simb, int end, bool jmpble) {
         TabSim_Node* new_Simb = new TabSim_Node();
         new_Simb->simb = simb;
         new_Simb->def = false;
         new_Simb->end = -1;
+        new_Simb->jmpble = jmpble;
         new_Simb->next = NULL;
         if(this->head == NULL) {this->head = new_Simb; this->tail = new_Simb;}
         else {this->tail->next = new_Simb; this->tail = new_Simb;}
@@ -254,7 +256,7 @@ string PreProcess(string arq) {
     readFile = fopen(arq.c_str(), "r");
     char inputChar;
     int val;
-    string to_Archive, inputStr, label, dir, outputFile = arq;
+    string to_Archive, inputStr, label, dir, aux, outputFile = arq;
     outputFile.erase(outputFile.end()-4, outputFile.end());
     outputFile.append(".pre");
     writeFile = fopen(outputFile.c_str(), "w");
@@ -309,7 +311,9 @@ string PreProcess(string arq) {
                     to_Archive = to_Archive.substr(0,to_Archive.find('\n'));
                     to_Archive = to_Archive + ' ' + p_String + '\n';
                 }
-                else to_Archive = to_Archive + p_String + '\n';
+                else {
+                    to_Archive = to_Archive + p_String + '\n';
+                }
             }
             else if (iter == 2) {
 
@@ -322,12 +326,16 @@ string PreProcess(string arq) {
 
                 if(dir != "EQU") {
                     to_Archive = to_Archive.substr(0,to_Archive.find('\n'));
-                    if(label == "COPY") to_Archive = to_Archive + ',' + p_String + '\n';
+                    if(dir == "COPY") to_Archive = to_Archive + ' ' + p_String;
+                    else if(label == "COPY") to_Archive = to_Archive + ',' + p_String + '\n';
                     else to_Archive = to_Archive + ' ' + p_String + '\n';
                 }
                 if(dir == "EQU") {
                     preSimb.add(label,dir,val);
                 }
+            }
+            else if (iter == 3) {
+                if(dir == "COPY") to_Archive = to_Archive + ',' + p_String + '\n';
             }
 
             p = strtok(NULL, " \t,");
@@ -447,9 +455,8 @@ int main(int argc, char const *argv[]) {
         return 0;
     }
 
-    vector<int> toArchiveText, toArchiveData;
-    vector<string> label_Vec, simb;
-    vector<int> linha, desloc_Vec, simbSpace;
+    vector<int> toArchiveText, toArchiveData, linha, desloc_Vec, simbSpace, linhaJump, linhaDiv, linhaMod, constValues;
+    vector<string> label_Vec, simb, destJumps, divs, labelsConst, modConst;
 
     int countEnd = 0, countLinha = 1, section = 0;
     int pulo_Vetor;
@@ -491,6 +498,7 @@ int main(int argc, char const *argv[]) {
                     instNode1 = NULL;
                     p_String = p_String.substr(0,p_String.find(':'));
                     simb.push_back(p_String);
+                    labelsConst.push_back(p_String);
                     simbNode = tabela_Simb.find(p_String);
                     if(simbNode != NULL) {
                         if(!simbNode->def) {
@@ -499,7 +507,8 @@ int main(int argc, char const *argv[]) {
                         else cout << " ERRO - Label já definida !!! ( Linha " << countLinha << " ) " << endl;
                     }
                     else { // se label n foi mencionada ainda
-                        tabela_Simb.addSimbSemPend(p_String, countEnd);
+                            if(section == 1) tabela_Simb.addSimbSemPend(p_String, countEnd, true);
+                            else if(section == 2) tabela_Simb.addSimbSemPend(p_String, countEnd, false);
                     }
                 }
                 else {
@@ -511,11 +520,15 @@ int main(int argc, char const *argv[]) {
                         } else if(p_String == "DATA") {
                             section = 2;
                         }
-                        else cout << "< ERRO - Section inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
+                        else {
+                            cout << "< ERRO - Section inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
+                            section = 0;
+                        }
                     }
                     else {
                         instNode1 = tabela_Inst.find(p);
                         if(instNode1 != NULL) { // Se achou a instrução na tabela
+                            if(section == 0) section = 1;
                             toArchiveText.push_back(instNode1->opcode);
                             countEnd += instNode1->size;
                         }
@@ -544,11 +557,23 @@ int main(int argc, char const *argv[]) {
                             else toArchiveText.push_back(simbNode->end + pulo_Vetor);
                         }
                         else {
-                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter), false);
                             toArchiveText.push_back(pulo_Vetor);
                         }
                     }
                     else {
+                        if(instNode1->name == "JMP" || instNode1->name == "JMPN" || instNode1->name == "JMPP" || instNode1->name == "JMPZ") {
+                                destJumps.push_back(p_String);
+                                linhaJump.push_back(countLinha);
+                        }
+                        else if(instNode1->name == "DIV") {
+                            divs.push_back(p_String);
+                            linhaDiv.push_back(countLinha);
+                        }
+                        else if (instNode1->name == "STORE") {
+                            modConst.push_back(p_String);
+                            linhaMod.push_back(countLinha);
+                        }
                         simbNode = tabela_Simb.find(p_String);
                         if (simbNode != NULL) {
                             if(!simbNode->def) {
@@ -558,7 +583,7 @@ int main(int argc, char const *argv[]) {
                             else toArchiveText.push_back(simbNode->end);
                         }
                         else {
-                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter), false);
                             toArchiveText.push_back(-1);
                         }
                     }
@@ -567,15 +592,21 @@ int main(int argc, char const *argv[]) {
                     dirNode = tabela_Dir.find(p);
                     instNode2 = tabela_Inst.find(p);
                     if(dirNode != NULL) {
+                        if(section == 0) section = 2;
                         if(dirNode->name == "SPACE") {
                             toArchiveData.push_back(0);
                             simbSpace.push_back(1);
+                            labelsConst.pop_back();
                         } 
-                        else simb.pop_back();
+                        else {
+                            simb.pop_back();
+                        }
                         countEnd++;
                     }
                     else if(instNode2 != NULL) {
+                        if(section == 0) section = 1;
                         simb.pop_back();
+                        labelsConst.pop_back();
                         toArchiveText.push_back(instNode2->opcode);
                         countEnd += instNode2->size;
                     }
@@ -594,7 +625,11 @@ int main(int argc, char const *argv[]) {
                         simbSpace.pop_back();
                         simbSpace.push_back(atoi(p));
                         countEnd += atoi(p) - 1;
-                    } else toArchiveData.push_back(ConverteHex(p_String));
+                    } else {
+                        int convertido = ConverteHex(p_String);
+                        toArchiveData.push_back(convertido);
+                        constValues.push_back(convertido);
+                    }
                 }
                 else if(instNode2 != NULL || (instNode1 != NULL && instNode1->name == "COPY")) { // Se a instrução for a SEGUNDA palavra
                     if(p_String.find('+') != string::npos) {
@@ -611,11 +646,23 @@ int main(int argc, char const *argv[]) {
                             else toArchiveText.push_back(simbNode->end + pulo_Vetor);
                         }
                         else {
-                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter), false);
                             toArchiveText.push_back(pulo_Vetor);
                         }
                     }
                     else {
+                        if(instNode2 != NULL && (instNode2->name == "JMP" || instNode2->name == "JMPN" || instNode2->name == "JMPP" || instNode2->name == "JMPZ")) {
+                            destJumps.push_back(p_String);
+                            linhaJump.push_back(countLinha);
+                        }
+                        else if(instNode2 != NULL && instNode2->name == "DIV") {
+                            divs.push_back(p_String);
+                            linhaDiv.push_back(countLinha);
+                        }
+                        else if((instNode2 != NULL && instNode2->name == "STORE") || (instNode1 != NULL && instNode1->name == "COPY")) {
+                            modConst.push_back(p_String);
+                            linhaMod.push_back(countLinha);
+                        }
                         simbNode = tabela_Simb.find(p_String);
                         if(simbNode != NULL) {
                             if(!simbNode->def) {
@@ -626,8 +673,8 @@ int main(int argc, char const *argv[]) {
                             else toArchiveText.push_back(simbNode->end);
                         }
                         else {
-                            if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
-                            else tabela_Simb.addSimbComPend(p, countEnd - 1);
+                            if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter), false);
+                            else tabela_Simb.addSimbComPend(p, countEnd - 1, false);
                             toArchiveText.push_back(-1);
                         }
                     }
@@ -653,11 +700,13 @@ int main(int argc, char const *argv[]) {
                             else toArchiveText.push_back(simbNode->end + pulo_Vetor);
                         }
                         else {
-                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter), false);
                             toArchiveText.push_back(pulo_Vetor);
                         }
                     }
                     else {
+                        modConst.push_back(p_String);
+                        linhaMod.push_back(countLinha);
                         simbNode = tabela_Simb.find(p_String);
                         if (simbNode != NULL) {
                             if(!simbNode->def) {
@@ -667,7 +716,7 @@ int main(int argc, char const *argv[]) {
                             else toArchiveText.push_back(simbNode->end);
                         }
                         else {
-                            tabela_Simb.addSimbComPend(p, countEnd - (instNode2->size - iter));
+                            tabela_Simb.addSimbComPend(p, countEnd - (instNode2->size - iter), false);
                             toArchiveText.push_back(-1);
                         }
                     }
@@ -691,6 +740,32 @@ int main(int argc, char const *argv[]) {
     tabela_Simb.print();
     cout << endl;
     tabela_Simb.Check_Def();
+
+    for(unsigned int i = 0; i < modConst.size(); i++) {
+        for (unsigned int j = 0; j < labelsConst.size(); j++) {
+            if(modConst[i] == labelsConst[j]) {
+                cout << " < ERRO - Modificação de um valor constante ( linha " << linhaMod[i] << " ) >" << endl;
+            }
+        }
+    }
+
+    for(unsigned int i = 0; i < divs.size(); i++) {
+        for (unsigned int j = 0; j < labelsConst.size(); j++) {
+            if(divs[i] == labelsConst[j] && constValues[j] == 0) {
+                cout << " < ERRO - Divisão por zero ( linha " << linhaDiv[i] << " ) >" << endl;
+            }
+        }
+    }
+
+    for (unsigned int i = 0; i < destJumps.size(); i++) {
+        TabSim_Node* simbNode = tabela_Simb.find(destJumps[i]);
+        if(simbNode == NULL || simbNode->def == false) {
+            cout << " < ERRO - Pulo para rótulo não definido ( linha " << linhaJump[i] << " ) >" << endl;
+        }
+        else if(simbNode->jmpble == false) {
+            cout << " < ERRO - Pulo para seção errada ( linha " << linhaJump[i] << " ) >" << endl;
+        }
+    }
 
     for(unsigned int i = 0; i < label_Vec.size(); i++) {
         for (unsigned int j = 0; j < simb.size(); j++) {
