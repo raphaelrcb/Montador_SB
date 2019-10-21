@@ -714,7 +714,7 @@ int main(int argc, char const *argv[]) {
                     }
                 }
                 else {
-                    cout << " < ERRO - Instrução com quantidade de operandos inválida ( linha " << countLinha << " ) >" << endl;
+                    cout << " < ERRO SINTÁTICO- Instrução com quantidade de operandos inválida ( linha " << countLinha << " ) >" << endl;
                     break; // vai pra próxima linha
                 }
             }
@@ -785,7 +785,7 @@ int main(int argc, char const *argv[]) {
     for(unsigned int i = 0; i < modConst.size(); i++) {
         for (unsigned int j = 0; j < labelsConst.size(); j++) {
             if(modConst[i] == labelsConst[j]) {
-                cout << " < ERRO - Modificação de um valor constante ( linha " << linhaMod[i] << " ) >" << endl;
+                cout << " < ERRO SEMÂNTICO- Modificação de um valor constante ( linha " << linhaMod[i] << " ) >" << endl;
             }
         }
     }
@@ -794,7 +794,7 @@ int main(int argc, char const *argv[]) {
     for(unsigned int i = 0; i < divs.size(); i++) {
         for (unsigned int j = 0; j < labelsConst.size(); j++) {
             if(divs[i] == labelsConst[j] && constValues[j] == 0) {
-                cout << " < ERRO - Divisão por zero ( linha " << linhaDiv[i] << " ) >" << endl;
+                cout << " < ERRO SEMÂNTICO- Divisão por zero ( linha " << linhaDiv[i] << " ) >" << endl;
             }
         }
     }
@@ -802,17 +802,17 @@ int main(int argc, char const *argv[]) {
     for (unsigned int i = 0; i < destJumps.size(); i++) {
         TabSim_Node* simbNode = tabela_Simb.find(destJumps[i]);
         if(simbNode == NULL || simbNode->def == false) {
-            cout << " < ERRO - Pulo para rótulo não definido ( linha " << linhaJump[i] << " ) >" << endl;
+            cout << " < ERRO SEMÂNTICO- Pulo para rótulo não definido ( linha " << linhaJump[i] << " ) >" << endl;
         }
         else if(simbNode->jmpble == false) {
-            cout << " < ERRO - Pulo para seção errada ( linha " << linhaJump[i] << " ) >" << endl;
+            cout << " < ERRO SEMÂNTICO - Pulo para seção errada ( linha " << linhaJump[i] << " ) >" << endl;
         }
     }
 
     for(unsigned int i = 0; i < label_Vec.size(); i++) {
         for (unsigned int j = 0; j < simb.size(); j++) {
             if(label_Vec[i] == simb[j] && (desloc_Vec[i] < 0 || desloc_Vec[i] >= simbSpace[j])) {
-                cout << " < ERRO - Acesso de posição não reservada ( linha " << linha[i] << " ) >" << endl;
+                cout << " < ERRO SEMÂNTICO- Acesso de posição não reservada ( linha " << linha[i] << " ) >" << endl;
             }
         }
     }
