@@ -452,6 +452,10 @@ int main(int argc, char const *argv[]) {
     bool section_text = false;
     int pulo_Vetor;
     char inputChar;
+    int EndOffset = 0;
+    bool Data_Before_Text = false;
+    int text_end = 0;
+    vector<int> Fix_Offset_At;
     string inputStr, label_Vetor;
     string arq_PreProcess = PreProcess(argv[1]);
 
@@ -506,7 +510,10 @@ int main(int argc, char const *argv[]) {
                         if(p_String == "TEXT") {
                             section = 1;
                             section_text = true;
+                            text_end = countEnd;
                         } else if(p_String == "DATA") {
+                            if (section_text == false) Data_Before_Text = true;
+                            else Data_Before_Text = false;
                             section = 2;
                         }
                         else cout << "< ERRO - Section inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
@@ -516,6 +523,7 @@ int main(int argc, char const *argv[]) {
                         if(instNode1 != NULL) { // Se achou a instrução na tabela
                             toArchiveText.push_back(instNode1->opcode);
                             countEnd += instNode1->size;
+                            if (instNode1->opcode == 14 && Data_Before_Text == true) EndOffset = countEnd;
                             if (section != 1){
                                 std::cout << "ERRO - Instrução na Seção errada! linha: " << countLinha << std::endl;
                             }
@@ -538,7 +546,10 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
                                 toArchiveText.push_back(pulo_Vetor);
                             }
-                            else toArchiveText.push_back(simbNode->end + pulo_Vetor);
+                            else{
+                                toArchiveText.push_back(simbNode->end + pulo_Vetor);
+                                if (Data_Before_Text) Fix_Offset_At.push_back(countEnd - text_end);
+                            } 
                         }
                         else {
                             tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
@@ -552,7 +563,10 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
                                 toArchiveText.push_back(-1);
                             }
-                            else toArchiveText.push_back(simbNode->end);
+                            else {
+                                toArchiveText.push_back(simbNode->end);
+                                if (Data_Before_Text) Fix_Offset_At.push_back(countEnd - text_end);
+                            }
                         }
                         else {
                             tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
@@ -600,7 +614,10 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
                                 toArchiveText.push_back(pulo_Vetor);
                             }
-                            else toArchiveText.push_back(simbNode->end + pulo_Vetor);
+                            else {
+                                    toArchiveText.push_back(simbNode->end + pulo_Vetor);
+                                    if (Data_Before_Text) Fix_Offset_At.push_back(countEnd - text_end);
+                                }
                         }
                         else {
                             tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
@@ -615,7 +632,13 @@ int main(int argc, char const *argv[]) {
                                 else tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
                                 toArchiveText.push_back(-1);
                             }
-                            else toArchiveText.push_back(simbNode->end);
+                            else {
+                                toArchiveText.push_back(simbNode->end);
+                                if (Data_Before_Text){
+                                    if(instNode1 != NULL && instNode1->name == "COPY") Fix_Offset_At.push_back(countEnd -1 - text_end); 
+                                    else Fix_Offset_At.push_back(countEnd - text_end);
+                                } 
+                            }
                         }
                         else {
                             if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
@@ -650,7 +673,10 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
                                 toArchiveText.push_back(-1);
                             }
-                            else toArchiveText.push_back(simbNode->end);
+                            else {
+                                toArchiveText.push_back(simbNode->end);
+                                if (Data_Before_Text) Fix_Offset_At.push_back(countEnd - text_end);
+                            }
                         }
                         else {
                             tabela_Simb.addSimbComPend(p, countEnd - (instNode2->size - iter));
@@ -682,13 +708,45 @@ int main(int argc, char const *argv[]) {
 
     cout << endl << "> toArchive =";
 
+    EndOffset -= text_end;
     unsigned int i = 0;
-    while(i < toArchiveText.size()) {
-        int num = toArchiveText.at(i);
-        cout << ' ' << num;
-        fprintf(writeFile, "%d", num);
-        i++;
-        if(i < toArchiveText.size()) fprintf(writeFile, "%c", ' ');
+    int fix = 0;
+    
+    if (Data_Before_Text == false){
+        while(i < toArchiveText.size()) {
+            int num = toArchiveText.at(i);
+            cout << ' ' << num;
+            fprintf(writeFile, "%d", num);
+            i++;
+            if(i < toArchiveText.size()) fprintf(writeFile, "%c", ' ');
+        }
+    } 
+    else
+    {
+        while(i < toArchiveText.size()) {
+            int num = toArchiveText.at(i);
+            for (size_t j = 0; j < Fix_Offset_At.size(); j++){
+                if ((signed)i+1 == Fix_Offset_At[j]){
+                    fix  = 1;
+                    break;
+                 }
+            }
+            if (num > text_end && fix == 1){
+                fprintf(writeFile, "%d", num - text_end);
+                cout << ' ' << num - text_end;
+            }
+            else if (num < text_end && fix == 1) {
+                fprintf(writeFile, "%d", num + EndOffset);  
+                cout << ' ' << num + EndOffset*fix;
+            }
+            else if (fix == 0){
+                fprintf(writeFile, "%d", num);  
+                cout << ' ' << num;
+            }
+            i++;
+            fix = 0;
+            if(i < toArchiveText.size()) fprintf(writeFile, "%c", ' ');
+        }       
     }
 
     i = 0;
@@ -700,8 +758,7 @@ int main(int argc, char const *argv[]) {
         i++;
         if(i < toArchiveData.size()) fprintf(writeFile, "%c", ' ');
     }
-
-    cout << endl << endl;
+    cout << endl << endl;    
 
     fclose(readFile);
     fclose(writeFile);
