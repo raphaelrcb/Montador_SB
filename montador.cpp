@@ -165,7 +165,7 @@ public:
         {
             if (!olho_Simb->def)
             {
-                std::cout << "ERRO - Definição de  " << olho_Simb->simb << " ausente!" << std::endl;
+                std::cout << "ERRO SINTÁTICO - Definição de  " << olho_Simb->simb << " ausente!" << std::endl;
             }
             
             olho_Simb = olho_Simb->next;            
@@ -294,7 +294,7 @@ string PreProcess(string arq) {
                 else if (label == "IF") {
                     label_Node = preSimb.find(p_String);
                     if (label_Node == NULL) {
-                        cout << "< ERRO > '" << p_String << "' não encontrado" << endl << endl;
+                        cout << "< ERRO SINTÁTICO > '" << p_String << "' não encontrado" << endl << endl;
                         fclose(readFile);
                         fclose(writeFile);
                         return outputFile;
@@ -488,7 +488,7 @@ int main(int argc, char const *argv[]) {
                 if(p_String.find(':') != string::npos) {
                     if (p_String.rfind(':') != p_String.find(':'))
                     {
-                        std::cout << "ERRO - dupla declaração de rótulo na linha " << countLinha << std::endl;
+                        std::cout << "ERRO SINTÁTICO - dupla declaração de rótulo na linha " << countLinha << std::endl;
                     }
                     instNode1 = NULL;
                     p_String = p_String.substr(0,p_String.find(':'));
@@ -497,7 +497,7 @@ int main(int argc, char const *argv[]) {
                         if(!simbNode->def) {
                             toArchiveText = tabela_Simb.resolvePend(simbNode, countEnd, toArchiveText);
                         }
-                        else cout << " ERRO - Label já definida !!! ( Linha " << countLinha << " ) " << endl;
+                        else cout << " ERRO SINTÁTICO - Label já definida !!! ( Linha " << countLinha << " ) " << endl;
                     }
                     else { // se label n foi mencionada ainda
                         tabela_Simb.addSimbSemPend(p_String, countEnd);
@@ -516,7 +516,7 @@ int main(int argc, char const *argv[]) {
                             else Data_Before_Text = false;
                             section = 2;
                         }
-                        else cout << "< ERRO - Section inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
+                        else cout << "< ERRO SINTÁTICO - Section inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
                     }
                     else {
                         instNode1 = tabela_Inst.find(p);
@@ -525,11 +525,11 @@ int main(int argc, char const *argv[]) {
                             countEnd += instNode1->size;
                             if (instNode1->opcode == 14 && Data_Before_Text == true) EndOffset = countEnd;
                             if (section != 1){
-                                std::cout << "ERRO - Instrução na Seção errada! linha: " << countLinha << std::endl;
+                                std::cout << "ERRO SINTÁTICO- Instrução na Seção errada! linha: " << countLinha << std::endl;
                             }
                         }
                         else {
-                            cout << "! Instrução não encontrada ('" << p << "'). ERRO (linha " << countLinha << ") !" << endl; 
+                            cout << "! Instrução não encontrada ('" << p << "'). ERRO SINTÁTICO(linha " << countLinha << ") !" << endl; 
                             break; // Vai pra próxima linha    
                         }
                     }
@@ -579,7 +579,7 @@ int main(int argc, char const *argv[]) {
                     instNode2 = tabela_Inst.find(p);
                     if(dirNode != NULL) {
                         if (section != 2){
-                            std::cout << "ERRO - Diretiva na Seção errada! linha: " << countLinha << std::endl;
+                            std::cout << "ERRO SINTÁTICO - Diretiva na Seção errada! linha: " << countLinha << std::endl;
                         }
                         if(dirNode->name == "SPACE") toArchiveData.push_back(0);
                         countEnd++;
@@ -588,11 +588,11 @@ int main(int argc, char const *argv[]) {
                         toArchiveText.push_back(instNode2->opcode);
                         countEnd += instNode2->size;
                         if (section != 1){
-                                std::cout << "ERRO - Instrução na Seção errada! linha: " << countLinha << std::endl;
+                                std::cout << "ERRO SINTÁTICO- Instrução na Seção errada! linha: " << countLinha << std::endl;
                         }
                     }
                     else {
-                        cout << "< ERRO - Instrução/Diretiva inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
+                        cout << "< ERRO SINTÁTICO - Instrução/Diretiva inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
                         break; // vai pra próxima linha
                     }
                 }
@@ -684,7 +684,7 @@ int main(int argc, char const *argv[]) {
                         }
                     }
                 } else {
-                    cout << " < ERRO - argumento na 4 palavra sem ser copy ( linha " << countLinha << " )" << endl;
+                    cout << " < ERRO SINTÁTICO - argumento na 4 palavra sem ser copy ( linha " << countLinha << " )" << endl;
                 }
             }
                     
@@ -699,7 +699,7 @@ int main(int argc, char const *argv[]) {
 
     tabela_Simb.Check_Def();
     if (!section_text){
-        std::cout << "ERRO - seção TEXT faltante!" << std::endl;
+        std::cout << "ERRO SINTÁTICO - seção TEXT faltante!" << std::endl;
     }
 
     cout << endl;
