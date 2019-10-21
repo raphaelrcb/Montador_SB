@@ -1,0 +1,8 @@
+
+**/.vscode
+**/bin
+**/dep
+*.bin
+*.o
+*.out
+*.json
