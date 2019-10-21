@@ -816,7 +816,6 @@ int main(int argc, char const *argv[]) {
 
     cout << endl;
     
-    tabela_Simb.print();
     cout << endl;
 
     for(unsigned int i = 0; i < modConst.size(); i++) {
