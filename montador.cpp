@@ -255,7 +255,7 @@ string PreProcess(string arq) {
     char inputChar;
     int val;
     string to_Archive, inputStr, label, dir, outputFile = arq;
-    //outputFile.erase (outputFile.end()-4, outputFile.end());
+    outputFile.erase (outputFile.end()-4, outputFile.end());
     outputFile.append(".pre");
     writeFile = fopen(outputFile.c_str(), "w");
 
@@ -467,7 +467,7 @@ int main(int argc, char const *argv[]) {
 
     FILE* readFile = fopen(arq_PreProcess.c_str(), "r");
     string outputFile = argv[1];
-    //outputFile.erase (outputFile.end()-4, outputFile.end());
+    outputFile.erase (outputFile.end()-4, outputFile.end());
     outputFile.append(".obj");
     FILE* writeFile = fopen(outputFile.c_str(), "w");
 
