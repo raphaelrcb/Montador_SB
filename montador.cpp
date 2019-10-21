@@ -165,7 +165,7 @@ public:
         {
             if (!olho_Simb->def)
             {
-                std::cout << "ERRO - Definição de  " << olho_Simb->simb << " ausente!" << std::endl;
+                std::cout << "ERRO SINTÁTICO - Definição de  " << olho_Simb->simb << " ausente!" << std::endl;
             }
             
             olho_Simb = olho_Simb->next;            
@@ -255,7 +255,7 @@ string PreProcess(string arq) {
     char inputChar;
     int val;
     string to_Archive, inputStr, label, dir, outputFile = arq;
-    //outputFile.erase (outputFile.end()-4, outputFile.end());
+    outputFile.erase (outputFile.end()-4, outputFile.end());
     outputFile.append(".pre");
     writeFile = fopen(outputFile.c_str(), "w");
 
@@ -294,7 +294,7 @@ string PreProcess(string arq) {
                 else if (label == "IF") {
                     label_Node = preSimb.find(p_String);
                     if (label_Node == NULL) {
-                        cout << "< ERRO > '" << p_String << "' não encontrado" << endl << endl;
+                        cout << "< ERRO SINTÁTICO > '" << p_String << "' não encontrado" << endl << endl;
                         fclose(readFile);
                         fclose(writeFile);
                         return outputFile;
@@ -449,8 +449,13 @@ int main(int argc, char const *argv[]) {
 
     vector<int> toArchiveText, toArchiveData;
     int countEnd = 0, countLinha = 1, section = 0;
+    bool section_text = false;
     int pulo_Vetor;
     char inputChar;
+    int EndOffset = 0;
+    bool Data_Before_Text = false;
+    int text_end = 0;
+    vector<int> Fix_Offset_At;
     string inputStr, label_Vetor;
     string arq_PreProcess = PreProcess(argv[1]);
 
@@ -462,7 +467,7 @@ int main(int argc, char const *argv[]) {
 
     FILE* readFile = fopen(arq_PreProcess.c_str(), "r");
     string outputFile = argv[1];
-    //outputFile.erase (outputFile.end()-4, outputFile.end());
+    outputFile.erase (outputFile.end()-4, outputFile.end());
     outputFile.append(".obj");
     FILE* writeFile = fopen(outputFile.c_str(), "w");
 
@@ -483,7 +488,7 @@ int main(int argc, char const *argv[]) {
                 if(p_String.find(':') != string::npos) {
                     if (p_String.rfind(':') != p_String.find(':'))
                     {
-                        std::cout << "ERRO - dupla declaração de rótulo na linha " << countLinha << std::endl;
+                        std::cout << "ERRO SINTÁTICO - dupla declaração de rótulo na linha " << countLinha << std::endl;
                     }
                     instNode1 = NULL;
                     p_String = p_String.substr(0,p_String.find(':'));
@@ -492,7 +497,7 @@ int main(int argc, char const *argv[]) {
                         if(!simbNode->def) {
                             toArchiveText = tabela_Simb.resolvePend(simbNode, countEnd, toArchiveText);
                         }
-                        else cout << " ERRO - Label já definida !!! ( Linha " << countLinha << " ) " << endl;
+                        else cout << " ERRO SINTÁTICO - Label já definida !!! ( Linha " << countLinha << " ) " << endl;
                     }
                     else { // se label n foi mencionada ainda
                         tabela_Simb.addSimbSemPend(p_String, countEnd);
@@ -504,19 +509,27 @@ int main(int argc, char const *argv[]) {
                         p_String = p;
                         if(p_String == "TEXT") {
                             section = 1;
+                            section_text = true;
+                            text_end = countEnd;
                         } else if(p_String == "DATA") {
+                            if (section_text == false) Data_Before_Text = true;
+                            else Data_Before_Text = false;
                             section = 2;
                         }
-                        else cout << "< ERRO - Section inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
+                        else cout << "< ERRO SINTÁTICO - Section inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
                     }
                     else {
                         instNode1 = tabela_Inst.find(p);
                         if(instNode1 != NULL) { // Se achou a instrução na tabela
                             toArchiveText.push_back(instNode1->opcode);
                             countEnd += instNode1->size;
+                            if (instNode1->opcode == 14 && Data_Before_Text == true) EndOffset = countEnd;
+                            if (section != 1){
+                                std::cout << "ERRO SINTÁTICO- Instrução na Seção errada! linha: " << countLinha << std::endl;
+                            }
                         }
                         else {
-                            cout << "! Instrução não encontrada ('" << p << "'). ERRO (linha " << countLinha << ") !" << endl; 
+                            cout << "! Instrução não encontrada ('" << p << "'). ERRO SINTÁTICO(linha " << countLinha << ") !" << endl; 
                             break; // Vai pra próxima linha    
                         }
                     }
@@ -533,7 +546,10 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
                                 toArchiveText.push_back(pulo_Vetor);
                             }
-                            else toArchiveText.push_back(simbNode->end + pulo_Vetor);
+                            else{
+                                toArchiveText.push_back(simbNode->end + pulo_Vetor);
+                                if (Data_Before_Text) Fix_Offset_At.push_back(countEnd - text_end);
+                            } 
                         }
                         else {
                             tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
@@ -547,7 +563,10 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
                                 toArchiveText.push_back(-1);
                             }
-                            else toArchiveText.push_back(simbNode->end);
+                            else {
+                                toArchiveText.push_back(simbNode->end);
+                                if (Data_Before_Text) Fix_Offset_At.push_back(countEnd - text_end);
+                            }
                         }
                         else {
                             tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
@@ -559,15 +578,21 @@ int main(int argc, char const *argv[]) {
                     dirNode = tabela_Dir.find(p);
                     instNode2 = tabela_Inst.find(p);
                     if(dirNode != NULL) {
+                        if (section != 2){
+                            std::cout << "ERRO SINTÁTICO - Diretiva na Seção errada! linha: " << countLinha << std::endl;
+                        }
                         if(dirNode->name == "SPACE") toArchiveData.push_back(0);
                         countEnd++;
                     }
                     else if(instNode2 != NULL) {
                         toArchiveText.push_back(instNode2->opcode);
                         countEnd += instNode2->size;
+                        if (section != 1){
+                                std::cout << "ERRO SINTÁTICO- Instrução na Seção errada! linha: " << countLinha << std::endl;
+                        }
                     }
                     else {
-                        cout << "< ERRO - Instrução/Diretiva inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
+                        cout << "< ERRO SINTÁTICO - Instrução/Diretiva inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
                         break; // vai pra próxima linha
                     }
                 }
@@ -589,7 +614,10 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
                                 toArchiveText.push_back(pulo_Vetor);
                             }
-                            else toArchiveText.push_back(simbNode->end + pulo_Vetor);
+                            else {
+                                    toArchiveText.push_back(simbNode->end + pulo_Vetor);
+                                    if (Data_Before_Text) Fix_Offset_At.push_back(countEnd - text_end);
+                                }
                         }
                         else {
                             tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
@@ -604,7 +632,13 @@ int main(int argc, char const *argv[]) {
                                 else tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
                                 toArchiveText.push_back(-1);
                             }
-                            else toArchiveText.push_back(simbNode->end);
+                            else {
+                                toArchiveText.push_back(simbNode->end);
+                                if (Data_Before_Text){
+                                    if(instNode1 != NULL && instNode1->name == "COPY") Fix_Offset_At.push_back(countEnd -1 - text_end); 
+                                    else Fix_Offset_At.push_back(countEnd - text_end);
+                                } 
+                            }
                         }
                         else {
                             if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter));
@@ -639,7 +673,10 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter));
                                 toArchiveText.push_back(-1);
                             }
-                            else toArchiveText.push_back(simbNode->end);
+                            else {
+                                toArchiveText.push_back(simbNode->end);
+                                if (Data_Before_Text) Fix_Offset_At.push_back(countEnd - text_end);
+                            }
                         }
                         else {
                             tabela_Simb.addSimbComPend(p, countEnd - (instNode2->size - iter));
@@ -647,7 +684,7 @@ int main(int argc, char const *argv[]) {
                         }
                     }
                 } else {
-                    cout << " < ERRO - argumento na 4 palavra sem ser copy ( linha " << countLinha << " )" << endl;
+                    cout << " < ERRO SINTÁTICO - argumento na 4 palavra sem ser copy ( linha " << countLinha << " )" << endl;
                 }
             }
                     
@@ -660,20 +697,56 @@ int main(int argc, char const *argv[]) {
         
     }
 
-   cout << endl;
-
-    tabela_Simb.print();
     tabela_Simb.Check_Def();
+    if (!section_text){
+        std::cout << "ERRO SINTÁTICO - seção TEXT faltante!" << std::endl;
+    }
+
+    cout << endl;
+    
+    tabela_Simb.print();
 
     cout << endl << "> toArchive =";
 
+    EndOffset -= text_end;
     unsigned int i = 0;
-    while(i < toArchiveText.size()) {
-        int num = toArchiveText.at(i);
-        cout << ' ' << num;
-        fprintf(writeFile, "%d", num);
-        i++;
-        if(i < toArchiveText.size()) fprintf(writeFile, "%c", ' ');
+    int fix = 0;
+    
+    if (Data_Before_Text == false){
+        while(i < toArchiveText.size()) {
+            int num = toArchiveText.at(i);
+            cout << ' ' << num;
+            fprintf(writeFile, "%d", num);
+            i++;
+            if(i < toArchiveText.size()) fprintf(writeFile, "%c", ' ');
+        }
+    } 
+    else
+    {
+        while(i < toArchiveText.size()) {
+            int num = toArchiveText.at(i);
+            for (size_t j = 0; j < Fix_Offset_At.size(); j++){
+                if ((signed)i+1 == Fix_Offset_At[j]){
+                    fix  = 1;
+                    break;
+                 }
+            }
+            if (num > text_end && fix == 1){
+                fprintf(writeFile, "%d", num - text_end);
+                cout << ' ' << num - text_end;
+            }
+            else if (num < text_end && fix == 1) {
+                fprintf(writeFile, "%d", num + EndOffset);  
+                cout << ' ' << num + EndOffset*fix;
+            }
+            else if (fix == 0){
+                fprintf(writeFile, "%d", num);  
+                cout << ' ' << num;
+            }
+            i++;
+            fix = 0;
+            if(i < toArchiveText.size()) fprintf(writeFile, "%c", ' ');
+        }       
     }
 
     i = 0;
@@ -685,8 +758,7 @@ int main(int argc, char const *argv[]) {
         i++;
         if(i < toArchiveData.size()) fprintf(writeFile, "%c", ' ');
     }
-
-    cout << endl << endl;
+    cout << endl << endl;    
 
     fclose(readFile);
     fclose(writeFile);
