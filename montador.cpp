@@ -594,13 +594,13 @@ int main(int argc, char const *argv[]) {
                         if (simbNode != NULL) {
                             if(instNode1->name == "ADD" || instNode1->name == "SUB" || instNode1->name == "MULT" || instNode1->name == "DIV" || instNode1->name == "COPY" || instNode1->name == "LOAD" || instNode1->name == "STORE" || instNode1->name == "INPUT" || instNode1->name == "OUTPUT") {
                                 if(simbNode->jmpble == true) {
-                                    cout << " < ERRO - Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
+                                    cout << " < ERRO SEMANTICO - Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
                                     break;
                                 }
                             }
                             else if(instNode1->name == "JMP" || instNode1->name == "JMPP" || instNode1->name == "JMPN" || instNode1->name == "JMPZ") {
                                 if(simbNode->jmpble == false) {
-                                    cout << " < ERRO - Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
+                                    cout << " < ERRO SEMANTICO- Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
                                     break;
                                 }
                             }
@@ -707,19 +707,19 @@ int main(int argc, char const *argv[]) {
                         if(simbNode != NULL) {
                             if(instNode2 != NULL && (instNode2->name == "ADD" || instNode2->name == "SUB" || instNode2->name == "MULT" || instNode2->name == "DIV" || instNode2->name == "COPY" || instNode2->name == "LOAD" || instNode2->name == "STORE" || instNode2->name == "INPUT" || instNode2->name == "OUTPUT")) {
                                 if(simbNode->jmpble == true) {
-                                    cout << " < ERRO - Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
+                                    cout << " < ERRO SEMANTICO- Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
                                     break;
                                 }
                             }
                             else if(instNode2 != NULL && (instNode2->name == "JMP" || instNode2->name == "JMPP" || instNode2->name == "JMPN" || instNode2->name == "JMPZ")) {
                                 if(simbNode->jmpble == false) {
-                                    cout << " < ERRO - Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
+                                    cout << " < ERRO SEMANtiCO- Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
                                     break;
                                 }
                             }
                             else if(instNode1 != NULL  && instNode1->name == "COPY") {
                                 if(simbNode->jmpble == true) {
-                                    cout << " < ERRO - Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
+                                    cout << " < ERRO SEMANTICO- Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
                                     break;
                                 }
                             }
@@ -776,7 +776,7 @@ int main(int argc, char const *argv[]) {
                         if (simbNode != NULL) {
                             if(instNode2 != NULL  && instNode2->name == "COPY") {
                                 if(simbNode->jmpble == true) {
-                                    cout << " < ERRO - Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
+                                    cout << " < ERRO SEMANTICO- Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
                                     break;
                                 }
                             }
