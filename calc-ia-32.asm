@@ -23,6 +23,9 @@ section .data
     op_sub db "VOCE ESCOLHEU SUBTRAÇÂO",0dH,0ah
     SIZE_SUB equ $-op_sub
 
+    op_div db "VOCE ESCOLHEU DIVISÂO",0dH,0ah
+    SIZE_DIV equ $-op_div
+
     op_mod db "VOCE ESCOLHEU MOD",0dH,0ah
     SIZE_MOD equ $-op_mod
 
@@ -67,7 +70,7 @@ section .data
 
 section .bss
 
-    operation RESB 2
+    operation RESB 1
     user RESB 20
     string_int RESB 20
     int_string RESB 20
@@ -124,8 +127,11 @@ show_menu:
     cmp byte [operation], 1     ;compara a opção lida com o valor 1 (opção de soma)
     je sum                      ;se vor soma pula para a label sum
 
-    cmp byte [operation], 2     ;compara a opção lida com o valor 1 (opção de subtração)
+    cmp byte [operation], 2     ;compara a opção lida com o valor 2 (opção de subtração)
     je subs                     ;se vor subtração pula para a label subs
+
+    cmp byte [operation], 4     ;compara a opção lida com o valor 4 (opção de divisão)
+    je divs                     ;se vor subtração pula para a label divs
 
     cmp byte [operation], 5     ;compara a opção lida com o valor 5 (operação de resto de divisao inteira)
     je mod                      ;se for mod pula para a label mod
@@ -142,6 +148,7 @@ end_cmp:                        ;label para o fim das comparações
     push DWORD getchar
     push DWORD 1
     call read_string
+    call clean_mem
     jmp show_menu               ;pula para a label show_menu para mostrar o menu novemente, após o fim das operações
 
 _sair:                          ;rotina para sair do programa
@@ -154,7 +161,7 @@ read_option:
     mov eax, SYS_READ           ;diz pro sistema que é para ler 
     mov ebx, STDIN              ;standard input 
     mov ecx, operation          ;posição de memória onde vai ser guardado o valor lido
-    mov edx, 2                  ;quantidade de bytes a serem lidos
+    mov edx, 1                  ;quantidade de bytes a serem lidos
     int 80h                     ;chama interrução de sistema
 
     sub byte [operation], 0x30  ;subtrai o valos 0x30 do valor lido para transformar de ASCI para inteiro
@@ -195,9 +202,6 @@ read_int:;retorne em eax o valor em inteiro
     push string_int             ;guarda posiçao de memóra onde vai ser lida a string 
     push DWORD 20               ;guarda quantidade de bytes a serem lidos como um número de 32bits
     call read_string            ;chama função para ler string 
-
-    ; cmp string_int, '-'
-    ; je negative_int
     
     convert_int:
     mov ecx, eax                ;move para ecx a quantidade de bytes lidos (eax vai conter o valor em inteiro)
@@ -240,7 +244,7 @@ write_int:
     push EBP                    ;guarda na pilha o valor atual de EBP
     mov EBP, ESP                ;move para EBP o valor atual de ESP (base da pilha) para poder fazer operações com esse valor sem o risco de perder ESP
     mov eax, [EBP+8]            ;move para EBP o valor guardado na pilha (valor do número a ser impresso)
-    
+    mov esi, int_string
     push esi
     push DWORD 20
     
@@ -251,13 +255,6 @@ write_int:
     cmp eax, 0                  ;compara o valor que queremos imprimir com 0
     jg loop_dig_write           ;se for maior que zero, pula pro loop
     neg eax                     ;se for menor que zero, inverte o sinal (com complemento de 2)
-    
-    ; pushad
-    ; push teste2
-    ; push size_teste2
-    ; call write_string
-    ; popad
-    
 
     loop_dig_write:
     inc ecx
@@ -302,6 +299,23 @@ overflow_check:
     push OVERFLOW_SIZE
     call write_string
     jmp end_cmp    
+
+clean_mem:
+    push esi 
+    push ecx
+    mov esi, int_string
+    mov ecx, 18
+    loop_clean:
+    mov byte [esi], " "
+    inc esi
+    loop loop_clean
+    mov byte [esi], FIM_STRING1
+    inc esi
+    mov byte [esi], FIM_STRING2
+    inc esi
+    pop ecx
+    pop esi
+    ret
 
 sum:
 
@@ -363,7 +377,7 @@ subs:
     mov DWORD ebx, [number2]
     sub eax, ebx
     jo overflow_check
-    jc overflow_check
+    ; jc overflow_check
     mov [number3], eax
 
     push equal
@@ -375,7 +389,46 @@ subs:
 
     jmp end_cmp
 
-mod:
+divs:
+
+
+
+    push op_div
+    push SIZE_DIV
+    call write_string
+
+    push primeiro_numero
+    push PRIMEIRO_NUMERO_SIZE
+    call write_string
+
+    call read_int               ;retorna em eax o valor inteiro lido
+    mov [number1], eax            ;move o valor lido para a posição de memória de nunmber1
+
+    push frac
+    push FRAC_SIZE
+    call write_string
+
+    call read_int
+    mov [number2], eax
+
+    mov DWORD eax, [number1]
+    mov DWORD ebx, [number2]
+    cdq                         ;faz a extensão de sinal de eax para edx:eax
+    idiv ebx
+    jo overflow_check
+    ; jc overflow_check1
+    mov [number3], eax
+
+    push equal
+    push EQUAL_SIZE
+    call write_string
+
+    push dword [number3]
+    call write_int
+
+    jmp end_cmp
+    
+    mod:
 
     push op_mod
     push SIZE_MOD
@@ -400,7 +453,7 @@ mod:
     cdq                         ;faz a extensão de sinal de eax para edx:eax
     idiv ebx
     jo overflow_check
-    jc overflow_check
+    ; jc overflow_check
     mov [number3], edx
 
     push equal
