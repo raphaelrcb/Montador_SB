@@ -198,7 +198,7 @@ loop_dig_write:
     push esi
     push ecx
     call write_string
-    ret 8
+    ret 4
 
 sum:
 
