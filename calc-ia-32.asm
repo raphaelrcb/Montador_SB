@@ -23,6 +23,9 @@ section .data
     op_sub db "VOCE ESCOLHEU SUBTRAÇÂO",0dH,0ah
     SIZE_SUB equ $-op_sub
 
+    op_mod db "VOCE ESCOLHEU MOD",0dH,0ah
+    SIZE_MOD equ $-op_mod
+
     teste db "aaaaaaaaaaaaaaaaaaaaaa",0dh,0ah
     size_teste equ $-teste    
     
@@ -47,12 +50,14 @@ section .data
     frac db "/",0dh,0ah
     FRAC_SIZE equ $-frac
 
-    mod db "MOD",0dh,0ah
-    MOD_SIZE equ $-mod
+    mod_ db "MOD",0dh,0ah
+    MOD_SIZE equ $-mod_
     
     equal db "= "
     EQUAL_SIZE equ $-equal
 
+    espera db "Pressione ENTER para continuar", 0dh,0ah
+    SIZE_ESPERA equ $-espera
 
     FIM_STRING1 equ 0dH
     FIM_STRING2 equ 0aH
@@ -66,6 +71,7 @@ section .bss
     number1 RESB 4
     number2 RESB 4
     number3 RESB 4
+    getchar RESB 1
 
 section .text
 
@@ -118,10 +124,21 @@ show_menu:
     cmp byte [operation], 2     ;compara a opção lida com o valor 1 (opção de subtração)
     je subs                     ;se vor subtração pula para a label subs
 
+    cmp byte [operation], 5     ;compara a opção lida com o valor 5 (operação de resto de divisao inteira)
+    je mod                      ;se for mod pula para a label mod
+
     cmp byte [operation], 6     ;compara a opção lida com o valor 6  (opção de saída)
     je _sair                    ;se for saída, pula para a label _sair qque é responsável por chamar a interrupção SYS_EXIT
 
 end_cmp:                        ;label para o fim das comparações
+
+    push DWORD espera
+    push DWORD SIZE_ESPERA
+    call write_string
+
+    push DWORD getchar
+    push DWORD 1
+    call read_string
     jmp show_menu               ;pula para a label show_menu para mostrar o menu novemente, após o fim das operações
 
 _sair:                          ;rotina para sair do programa
@@ -346,4 +363,38 @@ subs:
     call write_int
 
     jmp end_cmp
-    
+
+mod:
+
+    push op_mod
+    push SIZE_MOD
+    call write_string
+
+    push primeiro_numero
+    push PRIMEIRO_NUMERO_SIZE
+    call write_string
+
+    call read_int               ;retorna em eax o valor inteiro lido
+    mov [number1], eax            ;move o valor lido para a posição de memória de nunmber1
+
+    push mod_
+    push MOD_SIZE
+    call write_string
+
+    call read_int
+    mov [number2], eax
+
+    mov DWORD eax, [number1]
+    mov DWORD ebx, [number2]
+    cdq                         ;faz a extensão de sinal de eax para edx:eax
+    idiv ebx
+    mov [number3], edx
+
+    push equal
+    push EQUAL_SIZE
+    call write_string
+
+    push dword [number3]
+    call write_int
+
+    jmp end_cmp
