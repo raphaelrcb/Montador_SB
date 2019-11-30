@@ -20,6 +20,9 @@ section .data
     op_sum db "VOCE ESCOLHEU SOMA",0dH,0ah
     SIZE_SUM equ $-op_sum
 
+    op_sub db "VOCE ESCOLHEU SUBTRAÇÂO",0dH,0ah
+    SIZE_SUB equ $-op_sub
+
     teste db "aaaaaaaaaaaaaaaaaaaaaa",0dh,0ah
     size_teste equ $-teste    
     
@@ -111,6 +114,9 @@ show_menu:
 
     cmp byte [operation], 1     ;compara a opção lida com o valor 1 (opção de soma)
     je sum                      ;se vor soma pula para a label sum
+
+    cmp byte [operation], 2     ;compara a opção lida com o valor 1 (opção de subtração)
+    je subs                     ;se vor subtração pula para a label subs
 
     cmp byte [operation], 6     ;compara a opção lida com o valor 6  (opção de saída)
     je _sair                    ;se for saída, pula para a label _sair qque é responsável por chamar a interrupção SYS_EXIT
@@ -306,4 +312,38 @@ sum:
     call write_int
 
     jmp end_cmp
-    ; jmp show_menu
+
+subs:
+
+    push op_sub
+    push SIZE_SUB
+    call write_string
+
+    push primeiro_numero
+    push PRIMEIRO_NUMERO_SIZE
+    call write_string
+
+    call read_int               ;retorna em eax o valor inteiro lido
+    mov [number1], eax            ;move o valor lido para a posição de memória de nunmber1
+
+    push minus
+    push MINUS_SIZE
+    call write_string
+
+    call read_int
+    mov [number2], eax
+
+    mov DWORD eax, [number1]
+    mov DWORD ebx, [number2]
+    sub eax, ebx
+    mov [number3], eax
+
+    push equal
+    push EQUAL_SIZE
+    call write_string
+
+    push dword [number3]
+    call write_int
+
+    jmp end_cmp
+    
