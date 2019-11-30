@@ -145,17 +145,22 @@ read_int:;retorne em eax o valor em inteiro
     
     convert_int:
     mov ecx, eax                ;move para ecx a quantidade de bytes lidos (eax vai conter o valor em inteiro)
-    lea esi, [string_int]         ;move para esi (source index) o ponteiro de string int (primeiro digito )
+    dec ecx                     ;retira o '\n' da contagem de caracteres lidos
+    ; lea esi, [string_int]         ;move para esi (source index) o ponteiro de string int (primeiro digito )
+    mov esi, string_int
     xor ebx, ebx                ;zera ebx
     xor edx, edx                ;zera edx
 
     check_sign:
-    cmp esi, '-'                ;vê se o primeiro digito é um sinal de menos
-    jne loop_digito             ;se não for, pula para o loop para iniciar a conversão
+    mov byte bl, '-'
+    cmp byte [esi], bl                ;vê se o primeiro digito é um sinal de menos
+    jne loop_ebx             ;se não for, pula para o loop para iniciar a conversão
     inc esi                     ;muda o esi para o próximo caracter, que deverá ser o primeiro dígito
     dec ecx                     ;diminui em 1 o valor de ecx (tira da contagem de dígitos o caracter de '-')
     mov edx, -1                 ;guarda em edx "-1" para saber que deve inverter o inteiro no final
 
+    loop_ebx:
+    xor ebx, ebx                ;zera ebx
     loop_digito:
     movzx eax, BYTE [esi]       ;move para eax o byte de string_int
     sub byte al, 0x30           ;converte de ASCI pra inteiro
@@ -170,6 +175,8 @@ read_int:;retorne em eax o valor em inteiro
     neg eax                     ;se for igual, inverte eax
 
     fim_convert: 
+    ; cmp eax, -80
+    ; je _sair
     ret                         ;retorna 
 
 write_int:
