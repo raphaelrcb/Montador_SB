@@ -32,6 +32,9 @@ section .data
     teste2 db "bbbbbbbbbbbbbbbbbbbbbb",0dh,0ah
     size_teste2 equ $-teste2
 
+    overflow db "OPERAÇÃO DEU OVERFLOW", 0dh, 0ah
+    OVERFLOW_SIZE equ $-overflow
+
     sinal db "-"
     SINAL_SIZE equ 1
 
@@ -286,15 +289,19 @@ write_int:
     push SINAL_SIZE
     call write_string
     popad
-    ; push esi
-    ; push ecx
-    ; pushad
+
     end_write:
     call write_string
-    ; popad
 
     pop EBP
     ret 4
+
+overflow_check:
+
+    push overflow
+    push OVERFLOW_SIZE
+    call write_string
+    jmp end_cmp    
 
 sum:
 
@@ -319,6 +326,8 @@ sum:
     mov DWORD eax, [number1]
     mov DWORD ebx, [number2]
     add eax, ebx
+    jo overflow_check
+    jc overflow_check
     mov [number3], eax
 
     push equal
@@ -353,6 +362,8 @@ subs:
     mov DWORD eax, [number1]
     mov DWORD ebx, [number2]
     sub eax, ebx
+    jo overflow_check
+    jc overflow_check
     mov [number3], eax
 
     push equal
@@ -388,6 +399,8 @@ mod:
     mov DWORD ebx, [number2]
     cdq                         ;faz a extensão de sinal de eax para edx:eax
     idiv ebx
+    jo overflow_check
+    jc overflow_check
     mov [number3], edx
 
     push equal
