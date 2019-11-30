@@ -23,6 +23,9 @@ section .data
     op_sub db "VOCE ESCOLHEU SUBTRAÇÂO",0dH,0ah
     SIZE_SUB equ $-op_sub
 
+    op_mul db "VOCE ESCOLHEU MULTIPLICAÇÃO",0dH,0ah
+    SIZE_MUL equ $-op_mul
+
     op_div db "VOCE ESCOLHEU DIVISÂO",0dH,0ah
     SIZE_DIV equ $-op_div
 
@@ -70,13 +73,14 @@ section .data
 
 section .bss
 
-    operation RESB 1
+    operation RESB 2
     user RESB 20
     string_int RESB 20
     int_string RESB 20
     number1 RESB 4
     number2 RESB 4
     number3 RESB 4
+    number64 RESB 8
     getchar RESB 1
 
 section .text
@@ -130,6 +134,9 @@ show_menu:
     cmp byte [operation], 2     ;compara a opção lida com o valor 2 (opção de subtração)
     je subs                     ;se vor subtração pula para a label subs
 
+    cmp byte [operation], 3     ;compara a opção lida com o valor 3 (opção de multiplicação)
+    je mult
+
     cmp byte [operation], 4     ;compara a opção lida com o valor 4 (opção de divisão)
     je divs                     ;se vor subtração pula para a label divs
 
@@ -161,7 +168,7 @@ read_option:
     mov eax, SYS_READ           ;diz pro sistema que é para ler 
     mov ebx, STDIN              ;standard input 
     mov ecx, operation          ;posição de memória onde vai ser guardado o valor lido
-    mov edx, 1                  ;quantidade de bytes a serem lidos
+    mov edx, 2                  ;quantidade de bytes a serem lidos
     int 80h                     ;chama interrução de sistema
 
     sub byte [operation], 0x30  ;subtrai o valos 0x30 do valor lido para transformar de ASCI para inteiro
@@ -389,9 +396,47 @@ subs:
 
     jmp end_cmp
 
+mult:
+
+    push op_mul
+    push SIZE_MUL
+    call write_string
+
+    push primeiro_numero
+    push PRIMEIRO_NUMERO_SIZE
+    call write_string
+
+    call read_int               ;retorna em eax o valor inteiro lido
+    mov [number1], eax            ;move o valor lido para a posição de memória de nunmber1
+
+    push timex
+    push TIMEX_SIZE
+    call write_string
+
+    call read_int
+    mov [number2], eax
+
+    mov DWORD eax, [number1]
+    mov DWORD ebx, [number2]
+    ; cdq                           ;faz a extensão de sinal de eax para edx:eax
+    imul ebx
+    jo res_64                       ; o overflow flag ou o carry flag forem 1, edx:eax != eax ou seja o resultado é um número de 64 bits (tratar a parte)
+    jc res_64                       ; o overflow flag ou o carry flag forem 1, edx:eax != eax ou seja o resultado é um número de 64 bits (tratar a parte)
+    mov [number3], eax              ; se edx:eax = eax então é um número de 32 bits, tratar normal
+
+    push equal
+    push EQUAL_SIZE
+    call write_string
+
+    push dword [number3]
+    call write_int
+
+    jmp end_cmp
+
+    res_64:
+    jmp end_cmp
+    
 divs:
-
-
 
     push op_div
     push SIZE_DIV
