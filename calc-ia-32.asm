@@ -21,9 +21,38 @@ section .data
     SIZE_SUM equ $-op_sum
 
     teste db "aaaaaaaaaaaaaaaaaaaaaa",0dh,0ah
-    size_teste equ $-teste
+    size_teste equ $-teste    
+    
+    teste2 db "bbbbbbbbbbbbbbbbbbbbbb",0dh,0ah
+    size_teste2 equ $-teste2
 
-    FIM_STRING equ 0
+    sinal db "-"
+    SINAL_SIZE equ 1
+
+    primeiro_numero db "Digite a primeiro número:",0dh,0ah
+    PRIMEIRO_NUMERO_SIZE equ $-primeiro_numero
+
+    plus db "+",0dh,0ah
+    PLUS_SIZE equ $-plus
+    
+    minus db "-",0dh,0ah
+    MINUS_SIZE equ $-minus
+
+    timex db "x",0dh,0ah
+    TIMEX_SIZE equ $-timex
+
+    frac db "/",0dh,0ah
+    FRAC_SIZE equ $-frac
+
+    mod db "MOD",0dh,0ah
+    MOD_SIZE equ $-mod
+    
+    equal db "= "
+    EQUAL_SIZE equ $-equal
+
+
+    FIM_STRING1 equ 0dH
+    FIM_STRING2 equ 0aH
 
 section .bss
 
@@ -33,6 +62,7 @@ section .bss
     int_string RESB 20
     number1 RESB 4
     number2 RESB 4
+    number3 RESB 4
 
 section .text
 
@@ -185,26 +215,62 @@ write_int:
     mov EBP, ESP                ;move para EBP o valor atual de ESP (base da pilha) para poder fazer operações com esse valor sem o risco de perder ESP
     mov eax, [EBP+8]            ;move para EBP o valor guardado na pilha (valor do número a ser impresso)
     
-    mov ecx, 20                 ;move para ecx a quantidade maxima de bytes a serem escritos
-    lea esi, [int_string]       ;move para esi o valor da posição de memória onde guardar a string convertida
-    add esi, 19                 ;adiciona o max de bytes (pra chegar à última posição)
-    mov BYTE [esi], FIM_STRING  ;coloca na ultima posição o valor de fim da string?******
-    cmp eax, 0                  ;compara o valor que queremos imprimir com 0
+    push esi
+    push DWORD 20
+    
     mov ebx, 10                 ;pra ser usado em divisão
-    ja loop_dig_write           ;se for maior que zero, pula pro loop
+    xor ecx, ecx                ;zera ECX
+ 
+    check_sign2:
+    cmp eax, 0                  ;compara o valor que queremos imprimir com 0
+    jg loop_dig_write           ;se for maior que zero, pula pro loop
     neg eax                     ;se for menor que zero, inverte o sinal (com complemento de 2)
+    
+    ; pushad
+    ; push teste2
+    ; push size_teste2
+    ; call write_string
+    ; popad
+    
 
-loop_dig_write:
+    loop_dig_write:
+    inc ecx
     xor edx, edx                ;limpa edx antes da divisão edx:eax por ebx 
     div ebx                     ;eax = edx:eax/10 edx = edx:eax mod 10
-    add dl, 0x30                ;converte de inteiro para ASCI
-    mov [esi], dl               ;guarda no buffer apontado por esi o número convertido
+    add dx, 0x30                ;converte de inteiro para ASCI
+    push dx
     cmp eax, 0                  ;compara se eax é zero
     jne loop_dig_write          ;se não, repete o loop (repete até eax ser 0)
 
-    push esi
-    push ecx
+    stack_to_mem:
+    pop ax
+    mov byte [esi], al
+    inc esi
+    loop stack_to_mem
+
+    mov byte [esi], FIM_STRING1
+    inc esi
+    mov byte [esi], FIM_STRING2
+    inc esi
+
+    check_sign3:
+    mov eax, [EBP + 8]
+    cmp eax, 0
+    jge end_write
+    
+    pushad 
+    push sinal
+    push SINAL_SIZE
     call write_string
+    popad
+    ; push esi
+    ; push ecx
+    ; pushad
+    end_write:
+    call write_string
+    ; popad
+
+    pop EBP
     ret 4
 
 sum:
@@ -213,16 +279,30 @@ sum:
     push SIZE_SUM
     call write_string
 
+    push primeiro_numero
+    push PRIMEIRO_NUMERO_SIZE
+    call write_string
+
     call read_int               ;retorna em eax o valor inteiro lido
     mov [number1], eax            ;move o valor lido para a posição de memória de nunmber1
 
-    pushad
-    push teste
-    push size_teste
+    push plus
+    push PLUS_SIZE
     call write_string
-    popad
 
-    push number1
+    call read_int
+    mov [number2], eax
+
+    mov DWORD eax, [number1]
+    mov DWORD ebx, [number2]
+    add eax, ebx
+    mov [number3], eax
+
+    push equal
+    push EQUAL_SIZE
+    call write_string
+
+    push dword [number3]
     call write_int
 
     jmp end_cmp
