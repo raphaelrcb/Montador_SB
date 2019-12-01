@@ -227,6 +227,64 @@ public:
     }
 };
 
+class TabDef_Node {
+public:
+    string simb;
+    int val;
+    TabDef_Node* next;
+};
+
+class TabelaDef {
+public:
+    TabDef_Node *head, *tail;
+
+    TabelaDef() {
+        this->head = NULL;
+        this->tail = NULL;
+    }
+    ~TabelaDef(){}
+    
+    void addSimb(string simb) {
+        TabDef_Node* new_Simb = new TabDef_Node();
+        new_Simb->simb = simb;
+        // new_Simb->val = val;    
+        if(this->head == NULL) {this->head = new_Simb; this->tail = new_Simb;}
+        else {this->tail->next = new_Simb; this->tail = new_Simb;}   
+    }
+
+
+    void print() {
+        TabDef_Node* olho_Def = this->head;
+        cout << "Simb\t\tVal\n";
+        while(olho_Def != NULL) {
+            cout << olho_Def->simb << "\t\t" << olho_Def->val << "\t";
+            cout << endl;
+            olho_Def = olho_Def->next;
+        }
+    }
+
+    TabDef_Node* find(string simb) {
+        TabDef_Node* olho = this->head;
+        while(olho != NULL) {
+            if(simb == olho->simb) {
+                return olho;
+            }
+            olho = olho->next;
+        }
+        return NULL;
+    }
+
+    void addVal(string simb, int val){
+        TabDef_Node* olho = this->head;
+        TabDef_Node* new_Val;
+        new_Val = find(simb);
+        if (new_Val == NULL)
+            std::cout << "símbolo não existe, impossível atribuir valor" << std::endl;
+        else
+            new_Val->val = val;
+    }
+};
+
 int ConverteHex(std::string &s){
     int numero;
     std::stringstream ajuda;
@@ -381,6 +439,10 @@ Tabela CriaTabela(string c) {
         tabela.add("CONST"  ,  1, -1,  1);
         tabela.add("EQU"    ,  1, -1,  0);
         tabela.add("IF"     ,  1, -1,  0);
+        tabela.add("BEGIN"  ,  1, -1,  0);
+        tabela.add("END"    ,  1, -1,  0);
+        tabela.add("EXTERN" ,  1, -1,  0);
+        tabela.add("PUBLIC" ,  1, -1,  0);
     }
 
     return tabela;
