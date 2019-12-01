@@ -228,6 +228,57 @@ public:
     }
 };
 
+class TabUso_Node {
+public:
+    string simb;
+    int offs;
+    TabUso_Node* next;
+};
+
+class TabelaUso {
+public:
+    TabUso_Node *head, *tail;
+
+    TabelaUso() {
+        this->head = NULL;
+        this->tail = NULL;
+    }
+    ~TabelaUso(){}
+    
+    void addSimb(string simb, int offs) {
+        TabUso_Node* new_Simb = new TabUso_Node();
+        new_Simb->simb = simb;
+        new_Simb->offs = offs;    
+        if(this->head == NULL) {this->head = new_Simb; this->tail = new_Simb;}
+        else {this->tail->next = new_Simb; this->tail = new_Simb;}   
+    }
+
+
+    void print() {
+        TabUso_Node* olho_Uso = this->head;
+        cout << "Simb\t\tVal\n";
+        while(olho_Uso != NULL) {
+            cout << olho_Uso->simb << "\t\t" << olho_Uso->offs << "+" << "\t";
+            cout << endl;
+            olho_Uso = olho_Uso->next;
+        }
+    }
+
+    TabUso_Node* find(string simb) {
+        TabUso_Node* olho = this->head;
+        while(olho != NULL) {
+            if(simb == olho->simb) {
+                return olho;
+            }
+            olho = olho->next;
+        }
+        return NULL;
+    }
+
+    void addVal(string simb, int val){
+    }
+};
+
 class TabDef_Node {
 public:
     string simb;
