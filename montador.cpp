@@ -71,7 +71,7 @@ public:
 class TabSim_Node {
 public:
     string simb;
-    bool def, jmpble;
+    bool def, jmpble, ext = false;
     int end;
     TabSim_Node* next;
     Pend_Node* pendHead;
@@ -87,13 +87,14 @@ public:
     }
     ~TabelaSim(){}
     
-    void addSimbSemPend(string simb, int end, bool jmpble) {
+    void addSimbSemPend(string simb, int end, bool jmpble, bool ext = false) {
         TabSim_Node* new_Simb = new TabSim_Node();
         new_Simb->simb = simb;
         new_Simb->def = true;
         new_Simb->end = end;
         new_Simb->jmpble = jmpble;
         new_Simb->next = NULL;
+        new_Simb->ext = ext;
         if(this->head == NULL) {this->head = new_Simb; this->tail = new_Simb;}
         else {this->tail->next = new_Simb; this->tail = new_Simb;}
         new_Simb->pendHead = new Pend_Node();
@@ -146,10 +147,10 @@ public:
     void print() {
         TabSim_Node* olho_Simb = this->head;
         Pend_Node* olho_Pend = olho_Simb->pendHead;
-        cout << "Simb\t\tEnd\t\tDef\tPend\n";
+        cout << "Simb\t\tEnd\t\tDef\tPend\text\n";
         while(olho_Simb != NULL) {
-            if(olho_Simb->simb.length() > 7) cout << olho_Simb->simb << "\t" << olho_Simb->end << "\t\t" << olho_Simb->def << "\t";
-            else cout << olho_Simb->simb << "\t\t" << olho_Simb->end << "\t\t" << olho_Simb->def << "\t";
+            if(olho_Simb->simb.length() > 7) cout << olho_Simb->simb << "\t" << olho_Simb->end << "\t\t" << olho_Simb->def << "\t" << olho_Simb->ext << "\t";
+            else cout << olho_Simb->simb << "\t\t" << olho_Simb->end << "\t\t" << olho_Simb->def << "\t"<< olho_Simb->ext << "\t";
             while(olho_Pend != NULL) {
                 cout << olho_Pend->end << ',';
                 olho_Pend = olho_Pend->next;
@@ -560,6 +561,7 @@ int main(int argc, char const *argv[]) {
 
             if(iter == 0) { // Se for a primeira palavra da linha
                 if(p_String.find(':') != string::npos) {
+                    bool ext = false;
                     if (p_String.rfind(':') != p_String.find(':'))
                     {
                         std::cout << "ERRO SINTÁTICO - dupla declaração de rótulo na linha " << countLinha << std::endl;
@@ -569,6 +571,8 @@ int main(int argc, char const *argv[]) {
                     simb.push_back(p_String);
                     labelsConst.push_back(p_String);
                     simbNode = tabela_Simb.find(p_String);
+                    if (inputStr.find("EXTERN") != std::string::npos)
+                        ext = true;
                     if(simbNode != NULL) {
                         if(!simbNode->def) {
                             toArchiveText = tabela_Simb.resolvePend(simbNode, countEnd, toArchiveText);
@@ -576,8 +580,8 @@ int main(int argc, char const *argv[]) {
                         else cout << " ERRO SINTÁTICO - Label já definida !!! ( Linha " << countLinha << " ) " << endl;
                     }
                     else { // se label n foi mencionada ainda
-                            if(section == 1) tabela_Simb.addSimbSemPend(p_String, countEnd, true);
-                            else if(section == 2) tabela_Simb.addSimbSemPend(p_String, countEnd, false);
+                            if(section == 1) tabela_Simb.addSimbSemPend(p_String, countEnd, true, ext);
+                            else if(section == 2) tabela_Simb.addSimbSemPend(p_String, countEnd, false, ext);
                     }
                 }
                 else {
@@ -936,7 +940,8 @@ int main(int argc, char const *argv[]) {
         olho = olho->next;
     }
 
-    tabela_Def.print();
+    // tabela_Def.print();
+    tabela_Simb.print();
 
     cout << "> toArchive =";
 
