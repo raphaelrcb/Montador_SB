@@ -256,12 +256,13 @@ public:
 
     void print() {
         TabUso_Node* olho_Uso = this->head;
-        cout << "Simb\t\tVal\n";
+        cout << "Simb\t\tOffs\n";
         while(olho_Uso != NULL) {
             cout << olho_Uso->simb << "\t\t" << olho_Uso->offs << "+" << "\t";
             cout << endl;
             olho_Uso = olho_Uso->next;
         }
+        std::cout << std::endl;
     }
 
     TabUso_Node* find(string simb) {
@@ -590,6 +591,8 @@ int main(int argc, char const *argv[]) {
     TabSim_Node* simbNode;
     TabelaDef tabela_Def;
     TabDef_Node* defNode;
+    TabelaUso tabela_Uso;
+    // TabUso_Node* usoNode;
 
     FILE* readFile = fopen(arq_PreProcess.c_str(), "r");
     string outputFile = argv[1];
@@ -695,6 +698,9 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
                                 toArchiveText.push_back(pulo_Vetor);
                             }
+                            if(simbNode->ext){
+                                tabela_Uso.addSimb(simbNode->simb, countEnd);
+                            }
                             else{
                                 toArchiveText.push_back(simbNode->end + pulo_Vetor);
                                 if (Data_Before_Text) Fix_Offset_At.push_back(countEnd - text_end);
@@ -720,6 +726,9 @@ int main(int argc, char const *argv[]) {
                         }
                         simbNode = tabela_Simb.find(p_String);
                         if (simbNode != NULL) {
+                            if(simbNode->ext){
+                                tabela_Uso.addSimb(simbNode->simb, countEnd);
+                            }
                             if(instNode1->name == "ADD" || instNode1->name == "SUB" || instNode1->name == "MULT" || instNode1->name == "DIV" || instNode1->name == "COPY" || instNode1->name == "LOAD" || instNode1->name == "STORE" || instNode1->name == "INPUT" || instNode1->name == "OUTPUT") {
                                 if(simbNode->jmpble == true) {
                                     cout << " < ERRO SEMANTICO - Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
@@ -750,7 +759,7 @@ int main(int argc, char const *argv[]) {
                 else {
                     dirNode = tabela_Dir.find(p);
                     instNode2 = tabela_Inst.find(p);
-                    if(dirNode != NULL) {
+                    if(dirNode != NULL && dirNode->name != "EXTERN") {
                         if (section != 2){
                             std::cout << "ERRO SINTÁTICO - Diretiva na Seção errada! linha: " << countLinha << std::endl;
                         }
@@ -776,7 +785,8 @@ int main(int argc, char const *argv[]) {
                         }
                     }
                     else {
-                        cout << "< ERRO SINTÁTICO - Instrução/Diretiva inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
+                        if (dirNode->name != "EXTERN") 
+                            cout << "< ERRO SINTÁTICO - Instrução/Diretiva inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
                         break; // vai pra próxima linha
                     }
                 }
@@ -833,6 +843,9 @@ int main(int argc, char const *argv[]) {
                         }
                         simbNode = tabela_Simb.find(p_String);
                         if(simbNode != NULL) {
+                            if(simbNode->ext){
+                                tabela_Uso.addSimb(simbNode->simb, countEnd);
+                            }
                             if(instNode2 != NULL && (instNode2->name == "ADD" || instNode2->name == "SUB" || instNode2->name == "MULT" || instNode2->name == "DIV" || instNode2->name == "COPY" || instNode2->name == "LOAD" || instNode2->name == "STORE" || instNode2->name == "INPUT" || instNode2->name == "OUTPUT")) {
                                 if(simbNode->jmpble == true) {
                                     cout << " < ERRO SEMANTICO- Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
@@ -902,6 +915,9 @@ int main(int argc, char const *argv[]) {
                         linhaMod.push_back(countLinha);
                         simbNode = tabela_Simb.find(p_String);
                         if (simbNode != NULL) {
+                            if(simbNode->ext){
+                                tabela_Uso.addSimb(simbNode->simb, countEnd);
+                            }
                             if(instNode2 != NULL  && instNode2->name == "COPY") {
                                 if(simbNode->jmpble == true) {
                                     cout << " < ERRO SEMANTICO- Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
@@ -991,8 +1007,9 @@ int main(int argc, char const *argv[]) {
         olho = olho->next;
     }
 
-    // tabela_Def.print();
+    tabela_Def.print();
     tabela_Simb.print();
+    tabela_Uso.print();
 
     cout << "> toArchive =";
 
