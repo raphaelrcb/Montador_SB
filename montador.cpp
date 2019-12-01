@@ -592,6 +592,8 @@ int main(int argc, char const *argv[]) {
     TabelaDef tabela_Def;
     TabDef_Node* defNode;
     TabelaUso tabela_Uso;
+    int begin = -1;
+    int end = -1;
     // TabUso_Node* usoNode;
 
     FILE* readFile = fopen(arq_PreProcess.c_str(), "r");
@@ -625,6 +627,14 @@ int main(int argc, char const *argv[]) {
                     simb.push_back(p_String);
                     labelsConst.push_back(p_String);
                     simbNode = tabela_Simb.find(p_String);
+                    if (inputStr.find("BEGIN") != std::string::npos){
+                        p_String = p_String.substr(0,p_String.find(':'));
+                        simb.push_back(p_String);
+                        labelsConst.push_back(p_String);
+                        simbNode = tabela_Simb.find(p_String);
+                        tabela_Simb.addSimbSemPend(p_String, countEnd, true);
+                        begin = countEnd;
+                    }
                     if (inputStr.find("EXTERN") != std::string::npos)
                         ext = true;
                     if(simbNode != NULL) {
@@ -664,6 +674,9 @@ int main(int argc, char const *argv[]) {
                         {
                             tabela_Def.addSimb(p_String);
                         }
+                    }
+                    else if (p_String == "END"){
+                        end = countEnd - 1;
                     }
                     else {
                         instNode1 = tabela_Inst.find(p);
@@ -729,18 +742,18 @@ int main(int argc, char const *argv[]) {
                             if(simbNode->ext){
                                 tabela_Uso.addSimb(simbNode->simb, countEnd);
                             }
-                            if(instNode1->name == "ADD" || instNode1->name == "SUB" || instNode1->name == "MULT" || instNode1->name == "DIV" || instNode1->name == "COPY" || instNode1->name == "LOAD" || instNode1->name == "STORE" || instNode1->name == "INPUT" || instNode1->name == "OUTPUT") {
-                                if(simbNode->jmpble == true) {
-                                    cout << " < ERRO SEMANTICO - Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
-                                    break;
-                                }
-                            }
-                            else if(instNode1->name == "JMP" || instNode1->name == "JMPP" || instNode1->name == "JMPN" || instNode1->name == "JMPZ") {
-                                if(simbNode->jmpble == false) {
-                                    cout << " < ERRO SEMANTICO- Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
-                                    break;
-                                }
-                            }
+                            // if(instNode1->name == "ADD" || instNode1->name == "SUB" || instNode1->name == "MULT" || instNode1->name == "DIV" || instNode1->name == "COPY" || instNode1->name == "LOAD" || instNode1->name == "STORE" || instNode1->name == "INPUT" || instNode1->name == "OUTPUT") {
+                            //     if(simbNode->jmpble == true) {
+                            //         cout << " < ERRO SEMANTICO - Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
+                            //         break;
+                            //     }
+                            // }
+                            // else if(instNode1->name == "JMP" || instNode1->name == "JMPP" || instNode1->name == "JMPN" || instNode1->name == "JMPZ") {
+                            //     if(simbNode->jmpble == false) {
+                            //         cout << " < ERRO SEMANTICO- Instrução com tipo de operando inválido ( linha " << countLinha << " ) >" << endl;
+                            //         break;
+                            //     }
+                            // }
                             if(!simbNode->def) {
                                 tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
                                 toArchiveText.push_back(-1);
@@ -759,10 +772,10 @@ int main(int argc, char const *argv[]) {
                 else {
                     dirNode = tabela_Dir.find(p);
                     instNode2 = tabela_Inst.find(p);
-                    if(dirNode != NULL && dirNode->name != "EXTERN") {
-                        if (section != 2){
-                            std::cout << "ERRO SINTÁTICO - Diretiva na Seção errada! linha: " << countLinha << std::endl;
-                        }
+                    if(dirNode != NULL && dirNode->name != "EXTERN" && dirNode->name != "BEGIN") {
+                        // if (section != 2){
+                        //     std::cout << "ERRO SINTÁTICO - Diretiva na Seção errada! linha: " << countLinha << std::endl;
+                        // }
                         if(section == 0) section = 2;
                         if(dirNode->name == "SPACE") {
                             toArchiveData.push_back(0);
@@ -785,7 +798,7 @@ int main(int argc, char const *argv[]) {
                         }
                     }
                     else {
-                        if (dirNode->name != "EXTERN") 
+                        if (dirNode->name != "EXTERN" && dirNode->name != "BEGIN") 
                             cout << "< ERRO SINTÁTICO - Instrução/Diretiva inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
                         break; // vai pra próxima linha
                     }
@@ -962,13 +975,13 @@ int main(int argc, char const *argv[]) {
     
     cout << endl;
 
-    for(unsigned int i = 0; i < modConst.size(); i++) {
-        for (unsigned int j = 0; j < labelsConst.size(); j++) {
-            if(modConst[i] == labelsConst[j]) {
-                cout << " < ERRO SEMÂNTICO- Modificação de um valor constante ( linha " << linhaMod[i] << " ) >" << endl;
-            }
-        }
-    }
+    // for(unsigned int i = 0; i < modConst.size(); i++) {
+    //     for (unsigned int j = 0; j < labelsConst.size(); j++) {
+    //         if(modConst[i] == labelsConst[j]) {
+    //             cout << " < ERRO SEMÂNTICO- Modificação de um valor constante ( linha " << linhaMod[i] << " ) >" << endl;
+    //         }
+    //     }
+    // }
 
     EndOffset -= text_end;
     for(unsigned int i = 0; i < divs.size(); i++) {
@@ -979,15 +992,15 @@ int main(int argc, char const *argv[]) {
         }
     }
 
-    for (unsigned int i = 0; i < destJumps.size(); i++) {
-        TabSim_Node* simbNode = tabela_Simb.find(destJumps[i]);
-        if(simbNode == NULL || simbNode->def == false) {
-            cout << " < ERRO SEMÂNTICO- Pulo para rótulo não definido ( linha " << linhaJump[i] << " ) >" << endl;
-        }
-        else if(simbNode->jmpble == false) {
-            cout << " < ERRO SEMÂNTICO - Pulo para seção errada ( linha " << linhaJump[i] << " ) >" << endl;
-        }
-    }
+    // for (unsigned int i = 0; i < destJumps.size(); i++) {
+    //     TabSim_Node* simbNode = tabela_Simb.find(destJumps[i]);
+    //     if(simbNode == NULL || simbNode->def == false) {
+    //         cout << " < ERRO SEMÂNTICO- Pulo para rótulo não definido ( linha " << linhaJump[i] << " ) >" << endl;
+    //     }
+    //     else if(simbNode->jmpble == false) {
+    //         cout << " < ERRO SEMÂNTICO - Pulo para seção errada ( linha " << linhaJump[i] << " ) >" << endl;
+    //     }
+    // }
 
     for(unsigned int i = 0; i < label_Vec.size(); i++) {
         for (unsigned int j = 0; j < simb.size(); j++) {
@@ -1008,8 +1021,14 @@ int main(int argc, char const *argv[]) {
     }
 
     tabela_Def.print();
+    std::cout << std::endl;
     tabela_Simb.print();
+    std::cout << std::endl;
     tabela_Uso.print();
+    std::cout << std::endl;
+    std::cout << "begin = " << begin << std::endl;
+    std::cout << "end = " << end << std::endl;
+
 
     cout << "> toArchive =";
 
