@@ -275,7 +275,7 @@ public:
     }
 
     void addVal(string simb, int val){
-        TabDef_Node* olho = this->head;
+        // TabDef_Node* olho = this->head;
         TabDef_Node* new_Val;
         new_Val = find(simb);
         if (new_Val == NULL)
@@ -536,6 +536,8 @@ int main(int argc, char const *argv[]) {
     Tabela_Node *instNode1, *instNode2, *dirNode;
     TabelaSim tabela_Simb;
     TabSim_Node* simbNode;
+    TabelaDef tabela_Def;
+    TabDef_Node* defNode;
 
     FILE* readFile = fopen(arq_PreProcess.c_str(), "r");
     string outputFile = argv[1];
@@ -594,6 +596,15 @@ int main(int argc, char const *argv[]) {
                         else {
                             cout << "< ERRO SINTÁTICO - Section inválida '" << p_String << "' ( Linha " << countLinha << " ) >" << endl;
                             section = 0;
+                        }
+                    }
+                    else if(p_String == "PUBLIC") {
+                        p = strtok(NULL, " ,");
+                        p_String = p;
+                        defNode = tabela_Def.find(p_String);
+                        if (defNode == NULL)
+                        {
+                            tabela_Def.addSimb(p_String);
                         }
                     }
                     else {
@@ -914,6 +925,18 @@ int main(int argc, char const *argv[]) {
             }
         }
     }
+
+    TabDef_Node* olho = tabela_Def.head;
+    while (olho != NULL)
+    {
+        // std::cout << olho->simb << std::endl;
+        simbNode = tabela_Simb.find(olho->simb);
+        if (simbNode != NULL)
+            tabela_Def.addVal( simbNode->simb,simbNode->end);
+        olho = olho->next;
+    }
+
+    tabela_Def.print();
 
     cout << "> toArchive =";
 
