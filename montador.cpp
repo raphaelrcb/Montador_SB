@@ -1059,22 +1059,34 @@ int main(int argc, char const *argv[]) {
 
 
         outputFile.erase (outputFile.end()-4, outputFile.end());
-
         fprintf(writeFile, "H: %s\n", outputFile.c_str());
-        
         if (argc >= 2 && end != -1 && begin != -1 )
         {   
             fprintf(writeFile, "H: %d\n", end-begin);
         }
         fprintf(writeFile, "H: %s\n", mapa_bits.c_str());
 
+        TabDef_Node* Def_ToArch = tabela_Def.head;
+        while (Def_ToArch != NULL)
+        {
+            fprintf(writeFile, "D: %s %d\n", Def_ToArch->simb.c_str(), Def_ToArch->val);
+            Def_ToArch = Def_ToArch->next;
+        }
+
+        TabUso_Node* Uso_ToArch = tabela_Uso.head;
+        while (Uso_ToArch != NULL)
+        {
+            fprintf(writeFile, "U: %s %d+\n", Uso_ToArch->simb.c_str(), Uso_ToArch->offs);
+            Uso_ToArch = Uso_ToArch->next;
+        }
+
         cout << "> toArchive =";
 
         unsigned int i = 0;
         int fix = 0;
         
-        fprintf(writeFile,"T: ");
         
+        fprintf(writeFile,"T: ");
         if (Data_Before_Text == false){
             while(i < toArchiveText.size()) {
                 int num = toArchiveText.at(i);
