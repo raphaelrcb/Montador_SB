@@ -1062,7 +1062,7 @@ int main(int argc, char const *argv[]) {
         fprintf(writeFile, "H: %s\n", outputFile.c_str());
         if (argc >= 2 && end != -1 && begin != -1 )
         {   
-            fprintf(writeFile, "H: %d\n", end-begin);
+            fprintf(writeFile, "H: %d\n", (int)(toArchiveData.size()+toArchiveText.size()));
         }
         fprintf(writeFile, "H: %s\n", mapa_bits.c_str());
 
