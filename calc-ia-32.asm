@@ -68,9 +68,13 @@ section .data
     espera db "Pressione ENTER para continuar", 0dh,0ah
     SIZE_ESPERA equ $-espera
 
+    aux64 dq 0
+
     FIM_STRING1 equ 0dH
     FIM_STRING2 equ 0aH
 
+    warning db "A Multiplicação deu um número de 64 bits, a lógica para imprimir esse número foi feita mas graças a quantidade de operações feitas é extremamente alta, imprimir tal número se torna muito demorado e inviável, além dessa demora dificultar os testes nessa lógica. O código se encontra no momento comentado.", 0ha, 0dH
+    size_warning equ $-warning
 section .bss
 
     operation RESB 2
@@ -81,6 +85,7 @@ section .bss
     number2 RESB 4
     number3 RESB 4
     number64 RESB 8
+    int64 RESB 40
     getchar RESB 1
 
 section .text
@@ -434,6 +439,60 @@ mult:
     jmp end_cmp
 
     res_64:
+
+    ; pushad
+    ; push equal
+    ; push EQUAL_SIZE
+    ; call write_string
+    ; popad
+    
+    ; mov DWORD [number64], edx       ;coloca os 
+    ; mov DWORD [number64 + 4], eax
+    ; ; mov ecx, 0 
+
+    ; div_10:
+
+    ; inc dword [aux64+4]                   
+    ; adc dword [aux64], 0
+    
+    ; sub dword [number64+4], 10            
+    ; sbb dword [number64], 0
+    
+    ; cmp dword [number64+4], 10
+    ; ja div_10
+    
+    ; mov eax, [number64+4]           ;eax tem o resto da divisão, ecx tem o resultado
+    ; add ax, 0x30
+    ; push ax
+    ; mov eax, [aux64]
+    ; mov [number64], eax
+    ; mov eax, [aux64+4]
+    ; mov [number64+4], eax
+    ; cmp eax ,0
+    ; jne div_10 
+
+    ; mov esi, int64
+    ; mov ecx, 38
+
+    ; stack_to_mem64:
+    ; pop ax
+    ; mov byte [esi], al
+    ; inc esi
+    ; loop stack_to_mem64
+
+    ; mov byte [esi], FIM_STRING1
+    ; inc esi
+    ; mov byte [esi], FIM_STRING2
+    ; inc esi
+    
+    ; push esi
+    ; push 40
+    ; call write_string
+
+    push warning
+    push size_warning
+    call write_string
+    
     jmp end_cmp
     
 divs:
