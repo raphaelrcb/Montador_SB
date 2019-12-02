@@ -725,7 +725,7 @@ int main(int argc, char const *argv[]) {
                             simbNode = tabela_Simb.find(label_Vetor);
                             if (simbNode != NULL) {
                                 if(simbNode->ext){
-                                    tabela_Uso.addSimb(simbNode->simb, countEnd);
+                                    tabela_Uso.addSimb(simbNode->simb, countEnd - iter);
                                 }
                                 if(!simbNode->def) {
                                     tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
@@ -758,7 +758,7 @@ int main(int argc, char const *argv[]) {
                             simbNode = tabela_Simb.find(p_String);
                             if (simbNode != NULL) {
                                 if(simbNode->ext){
-                                    tabela_Uso.addSimb(simbNode->simb, countEnd);
+                                    tabela_Uso.addSimb(simbNode->simb, countEnd - iter);
                                 }
                                 // if(instNode1->name == "ADD" || instNode1->name == "SUB" || instNode1->name == "MULT" || instNode1->name == "DIV" || instNode1->name == "COPY" || instNode1->name == "LOAD" || instNode1->name == "STORE" || instNode1->name == "INPUT" || instNode1->name == "OUTPUT") {
                                 //     if(simbNode->jmpble == true) {
@@ -1062,7 +1062,7 @@ int main(int argc, char const *argv[]) {
         fprintf(writeFile, "H: %s\n", outputFile.c_str());
         if (argc >= 2 && end != -1 && begin != -1 )
         {   
-            fprintf(writeFile, "H: %d\n", end-begin);
+            fprintf(writeFile, "H: %d\n", (int)(toArchiveData.size()+toArchiveText.size()));
         }
         fprintf(writeFile, "H: %s\n", mapa_bits.c_str());
 
