@@ -1048,6 +1048,15 @@ int main(int argc, char const *argv[]) {
         std::cout << "begin = " << begin << std::endl;
         std::cout << "end = " << end << std::endl;
 
+        if (argc >= 2 && end != -1 && begin != -1 )
+        {   
+            fprintf(writeFile, "%d", begin);
+            fprintf(writeFile, "%c", ' ');
+            fprintf(writeFile, "%d", end);
+            fprintf(writeFile, "%c", '\n');
+        }
+
+        while (getchar()!= '\n');
 
         cout << "> toArchive =";
 
