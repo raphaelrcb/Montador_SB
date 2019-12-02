@@ -629,7 +629,6 @@ int main(int argc, char const *argv[]) {
             char *p = strtok(strdupa(inputStr.c_str()), " ,");
 
             while(p != NULL) {
-
                 string p_String = p;
 
                 if(iter == 0) { // Se for a primeira palavra da linha
@@ -903,7 +902,8 @@ int main(int argc, char const *argv[]) {
                                 if(!simbNode->def) {
                                     // cout << " asssadsadas " << p_String << "    " << countEnd << endl; 
                                     if(instNode1 != NULL && instNode1->name == "COPY") tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
-                                    else {tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - iter), 1);
+                                    else {
+                                        tabela_Simb.addPend(simbNode, countEnd - (instNode2->size - 1), 1);
                                         // cout << " addpend " << simbNode->simb << countEnd - (instNode2->size - iter -1)  << endl;                                
                                     }
                                     toArchiveText.push_back(-1);
