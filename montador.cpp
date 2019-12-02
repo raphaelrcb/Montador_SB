@@ -599,6 +599,7 @@ int main(int argc, char const *argv[]) {
         vector<int> Fix_Offset_At;
         string inputStr, label_Vetor;
         string arq_PreProcess = PreProcess(argv[mod]);
+        string mapa_bits;
 
         Tabela tabela_Inst = CriaTabela("instrucoes");
         Tabela tabela_Dir = CriaTabela("diretivas");
@@ -699,6 +700,7 @@ int main(int argc, char const *argv[]) {
                             if(instNode1 != NULL) { // Se achou a instrução na tabela
                                 if(section == 0) section = 1;
                                 toArchiveText.push_back(instNode1->opcode);
+                                mapa_bits.push_back('0');
                                 countEnd += instNode1->size;
                                 if (instNode1->opcode == 14 && Data_Before_Text == true) EndOffset = countEnd;
                                 if (section != 1){
@@ -723,12 +725,12 @@ int main(int argc, char const *argv[]) {
                             linha.push_back(countLinha);
                             simbNode = tabela_Simb.find(label_Vetor);
                             if (simbNode != NULL) {
+                                if(simbNode->ext){
+                                    tabela_Uso.addSimb(simbNode->simb, countEnd);
+                                }
                                 if(!simbNode->def) {
                                     tabela_Simb.addPend(simbNode, countEnd - (instNode1->size - iter));
                                     toArchiveText.push_back(pulo_Vetor);
-                                }
-                                if(simbNode->ext){
-                                    tabela_Uso.addSimb(simbNode->simb, countEnd);
                                 }
                                 else{
                                     toArchiveText.push_back(simbNode->end + pulo_Vetor);
@@ -739,6 +741,7 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter), false);
                                 toArchiveText.push_back(pulo_Vetor);
                             }
+                            mapa_bits.push_back('1');
                         }
                         else {
                             if(instNode1->name == "JMP" || instNode1->name == "JMPN" || instNode1->name == "JMPP" || instNode1->name == "JMPZ") {
@@ -783,6 +786,7 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter), false);
                                 toArchiveText.push_back(-1);
                             }
+                            mapa_bits.push_back('1');
                         }
                     }
                     else {
@@ -808,6 +812,7 @@ int main(int argc, char const *argv[]) {
                             simb.pop_back();
                             labelsConst.pop_back();
                             toArchiveText.push_back(instNode2->opcode);
+                            mapa_bits.push_back('0');
                             countEnd += instNode2->size;
                             if (section != 1){
                                     std::cout << "ERRO SINTÁTICO- Instrução na Seção errada! linha: " << countLinha << std::endl;
@@ -856,6 +861,7 @@ int main(int argc, char const *argv[]) {
                                 tabela_Simb.addSimbComPend(p, countEnd - (instNode1->size - iter), false);
                                 toArchiveText.push_back(pulo_Vetor);
                             }
+                            mapa_bits.push_back('1'); 
                         }
                         else {
                             if(instNode2 != NULL && (instNode2->name == "JMP" || instNode2->name == "JMPN" || instNode2->name == "JMPP" || instNode2->name == "JMPZ")) {
@@ -915,6 +921,7 @@ int main(int argc, char const *argv[]) {
                                 else tabela_Simb.addSimbComPend(p, countEnd - 1, false);
                                 toArchiveText.push_back(-1);
                             }
+                            mapa_bits.push_back('1');
                         }
                     }
                     else {
@@ -974,6 +981,7 @@ int main(int argc, char const *argv[]) {
                         cout << " < ERRO SINTÁTICO - Instrução com quantidade de operandos inválida ( linha " << countLinha << " ) >" << endl;
                         break; // vai pra próxima linha
                     }
+                    mapa_bits.push_back('1');
                 }
                         
                 iter++;
@@ -1047,21 +1055,25 @@ int main(int argc, char const *argv[]) {
         std::cout << std::endl;
         std::cout << "begin = " << begin << std::endl;
         std::cout << "end = " << end << std::endl;
+        std::cout << mapa_bits << std::endl;
 
+
+        outputFile.erase (outputFile.end()-4, outputFile.end());
+
+        fprintf(writeFile, "H: %s\n", outputFile.c_str());
+        
         if (argc >= 2 && end != -1 && begin != -1 )
         {   
-            fprintf(writeFile, "%d", begin);
-            fprintf(writeFile, "%c", ' ');
-            fprintf(writeFile, "%d", end);
-            fprintf(writeFile, "%c", '\n');
+            fprintf(writeFile, "H: %d\n", end-begin);
         }
-
-        while (getchar()!= '\n');
+        fprintf(writeFile, "H: %s\n", mapa_bits.c_str());
 
         cout << "> toArchive =";
 
         unsigned int i = 0;
         int fix = 0;
+        
+        fprintf(writeFile,"T: ");
         
         if (Data_Before_Text == false){
             while(i < toArchiveText.size()) {
